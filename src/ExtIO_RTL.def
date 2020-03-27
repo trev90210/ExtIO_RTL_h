@@ -1,0 +1,30 @@
+LIBRARY ExtIO_RTL
+EXPORTS
+; HW
+    CloseHW
+    GetHWLO
+    GetHWSR
+    InitHW
+    OpenHW
+    SetHWLO
+    StartHW
+    StopHW
+
+; Window
+    GetStatus
+    HideGUI
+    SetCallback
+    ShowGUI
+    SwitchGUI
+
+; Samplerate / Bandwidth
+    ExtIoGetSrates
+    ExtIoGetActualSrateIdx
+    ExtIoSetSrate
+
+; Settings
+    ExtIoGetSetting
+    ExtIoSetSetting
+    GetActualAttIdx
+    GetAttenuators
+    SetAttenuator

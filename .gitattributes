@@ -1,0 +1,7 @@
+COPYING text eol=lf
+README.md text eol=lf
+*.cpp text eol=crlf
+*.def text eol=crlf
+*.h text eol=crlf
+*.rc text eol=crlf
+*.vcxproj text eol=crlf
