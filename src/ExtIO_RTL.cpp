@@ -133,11 +133,20 @@ extern "C" bool __stdcall OpenHW(void)
 	return TRUE;
 }
 
-extern "C" long __stdcall SetHWLO(long LOfreq)
+extern "C" int64_t __stdcall SetHWLO64(int64_t LOfreq)
 {
-	long ExtIOPllLocked;
+	int ExtIOPllLocked = 1;
+	int64_t ret = 0;
 
-	ExtIOPllLocked = rtlsdr_set_center_freq(RtlSdrDev, LOfreq);
+	if ((LOfreq < 1) || (LOfreq > (int64_t)0xffffffff)) {
+		ret = -1;
+	} else {
+		ExtIOPllLocked = rtlsdr_set_center_freq(RtlSdrDev,
+					     (uint32_t)(LOfreq & 0xffffffff));
+		if (ExtIOPllLocked)
+			ret = -1;
+	}
+
 	if (ExtIOPllLocked != RtlSdrPllLocked) {
 		RtlSdrPllLocked = ExtIOPllLocked;
 		if (!RtlSdrPllLocked)
@@ -150,15 +159,21 @@ extern "C" long __stdcall SetHWLO(long LOfreq)
 		InvalidateRect(h_dialog, NULL, TRUE);
 		UpdateWindow(h_dialog);
 	}
-	if (ExtIOPllLocked)
-		return -1;
-	ExtIOPllLocked = rtlsdr_get_center_freq(RtlSdrDev);
-	if (ExtIOPllLocked != LOfreq)
+	if (ret)
+		return ret;
+	if (LOfreq != GetHWLO64())
 		ExtIOCallback(-1, EXTIO_CHANGED_LO, 0, NULL);
 	return 0;
 }
 
-extern "C" int __stdcall StartHW(long LOfreq)
+extern "C" long __stdcall SetHWLO(long LOfreq)
+{
+	int64_t ret = SetHWLO64((int64_t)(unsigned long)LOfreq);
+
+	return (long)(ret & 0xffffffff);
+}
+
+extern "C" int __stdcall StartHW64(int64_t LOfreq)
 {
 	if (!RtlSdrDev)
 		return -1;
@@ -176,22 +191,34 @@ extern "C" int __stdcall StartHW(long LOfreq)
 		return -1;
 	}
 
-	SetHWLO(LOfreq);
+	SetHWLO64(LOfreq);
 	EnableWindow(GetDlgItem(h_dialog, IDC_RTL_BUFFER), FALSE);
 	EnableWindow(GetDlgItem(h_dialog, IDC_RTL_DEVICE), FALSE);
 	return (int)(RtlSdrBufSize / 2);
 }
 
+extern "C" int __stdcall StartHW(long LOfreq)
+{
+	return StartHW64((int64_t)(unsigned long)LOfreq);
+}
+
+extern "C" int64_t __stdcall GetHWLO64(void)
+{
+	int64_t LOfreq;
+	static int64_t LastLOfreq = 100000000;
+
+	LOfreq = (int64_t)rtlsdr_get_center_freq(RtlSdrDev);
+	if (!LOfreq)
+		return LastLOfreq;
+	LastLOfreq = LOfreq;
+	return LOfreq;
+}
+
 extern "C" long __stdcall GetHWLO(void)
 {
-	static long last_freq = 100000000;
-	long freq;
+	int64_t LOfreq = GetHWLO64();
 
-	freq = (long)rtlsdr_get_center_freq(RtlSdrDev);
-	if (!freq)
-		return last_freq;
-	last_freq = freq;
-	return freq;
+	return (long)(LOfreq & 0x7fffffff);
 }
 
 extern "C" long __stdcall GetHWSR(void)

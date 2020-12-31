@@ -9,6 +9,7 @@ ExtIoSetSetting
 ExtIoSetSrate
 GetActualAttIdx
 GetAttenuators
+GetHWLO64
 GetHWLO
 GetHWSR
 GetStatus
@@ -17,8 +18,10 @@ InitHW
 OpenHW
 SetAttenuator
 SetCallback
+SetHWLO64
 SetHWLO
 ShowGUI
+StartHW64
 StartHW
 StopHW
 SwitchGUI
