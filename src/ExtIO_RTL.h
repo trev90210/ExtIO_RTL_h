@@ -29,6 +29,8 @@
 #define EXTIO_CHANGED_ATT	125
 #define EXTIO_CHANGED_RF_IF	136
 
+#define EXTIO_SET_STATUS(EXTIO_CB, EXTIO_CMD)	EXTIO_CB(-1, EXTIO_CMD, 0, NULL)
+
 extern HMODULE hInst;
 
 extern "C" void __stdcall CloseHW(void);

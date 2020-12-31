@@ -159,7 +159,7 @@ extern "C" int64_t __stdcall SetHWLO64(int64_t LOfreq)
 	if (ret)
 		return ret;
 	if (LOfreq != GetHWLO64())
-		ExtIOCallback(-1, EXTIO_CHANGED_LO, 0, NULL);
+		EXTIO_SET_STATUS(ExtIOCallback, EXTIO_CHANGED_LO);
 	return 0;
 }
 
@@ -244,7 +244,7 @@ extern "C" int __stdcall ExtIoSetSrate(int idx)
 
 	rtlsdr_set_sample_rate(RtlSdrDev, RtlSdrSampleRateArr[idx].value);
 	ComboBox_SetCurSel(GetDlgItem(h_dialog, IDC_RTL_SAMPLE_RATE), idx);
-	ExtIOCallback(-1, EXTIO_CHANGED_SR, 0, NULL);
+	EXTIO_SET_STATUS(ExtIOCallback, EXTIO_CHANGED_SR);
 	return 0;
 }
 
@@ -613,7 +613,7 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 				Edit_GetText((HWND)lParam, ppm, 256);
 				newppm = ppm_validate(_ttoi(ppm));
 				if (!rtlsdr_set_freq_correction(RtlSdrDev, newppm))
-					ExtIOCallback(-1, EXTIO_CHANGED_LO, 0, NULL);
+					EXTIO_SET_STATUS(ExtIOCallback, EXTIO_CHANGED_LO);
 			}
 			return TRUE;
 		case IDC_RTL_AGC:
@@ -656,7 +656,7 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 				rtlsdr_set_sample_rate(RtlSdrDev,
 					RtlSdrSampleRateArr[ComboBox_GetCurSel
 					(GET_WM_COMMAND_HWND(wParam, lParam))].value);
-				ExtIOCallback(-1, EXTIO_CHANGED_SR, 0, NULL);
+				EXTIO_SET_STATUS(ExtIOCallback, EXTIO_CHANGED_SR);
 			}
 			if (GET_WM_COMMAND_CMD(wParam, lParam) == CBN_EDITUPDATE) {
 				uint32_t newsrate;
@@ -667,7 +667,7 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 				if (!rtlsdr_set_sample_rate(RtlSdrDev, newsrate)) {
 					_itot(newsrate, srate, 10);
 					ComboBox_SetText((HWND)lParam, srate);
-					ExtIOCallback(-1, EXTIO_CHANGED_SR, 0, NULL);
+					EXTIO_SET_STATUS(ExtIOCallback, EXTIO_CHANGED_SR);
 				}
 			}
 			return TRUE;
@@ -675,7 +675,7 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 			if (GET_WM_COMMAND_CMD(wParam, lParam) == CBN_SELCHANGE) {
 				RtlSdrBufSize = RtlSdrBufSizeArr[ComboBox_GetCurSel
 						(GET_WM_COMMAND_HWND(wParam, lParam))] * 1024;
-				ExtIOCallback(-1, EXTIO_CHANGED_SR, 0, NULL);
+				EXTIO_SET_STATUS(ExtIOCallback, EXTIO_CHANGED_SR);
 			}
 			return TRUE;
 		case IDC_RTL_DIR_SAMPLING:
@@ -700,7 +700,7 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 						rtlsdr_set_tuner_gain(RtlSdrDev, pos);
 					}
 				}
-				ExtIOCallback(-1, EXTIO_CHANGED_LO, 0, NULL);
+				EXTIO_SET_STATUS(ExtIOCallback, EXTIO_CHANGED_LO);
 			}
 			return TRUE;
 		case IDC_RTL_DEVICE:
@@ -729,7 +729,7 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 				rtlsdr_set_freq_correction(RtlSdrDev, currppm);
 				rtlsdr_set_direct_sampling(RtlSdrDev, ComboBox_GetCurSel
 					(GetDlgItem(hwndDlg, IDC_RTL_DIR_SAMPLING)));
-				ExtIOCallback(-1, EXTIO_CHANGED_SR, 0, NULL);
+				EXTIO_SET_STATUS(ExtIOCallback, EXTIO_CHANGED_SR);
 
 				if (Button_GetCheck(GetDlgItem
 					(hwndDlg, IDC_TUNER_AGC)) == BST_CHECKED)
@@ -750,7 +750,7 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 					rtlsdr_set_offset_tuning(RtlSdrDev, 0);
 
 				ExtIOTunerGainsConf(hwndDlg, hGain);
-				ExtIOCallback(-1, EXTIO_CHANGED_RF_IF, 0, NULL);
+				EXTIO_SET_STATUS(ExtIOCallback, EXTIO_CHANGED_RF_IF);
 
 				if (Button_GetCheck(GetDlgItem
 					(hwndDlg, IDC_TUNER_AGC)) == BST_CHECKED) {
@@ -797,7 +797,7 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 			if (pos != RtlSdrTunerGain) {
 				RtlSdrTunerGain = pos;
 				rtlsdr_set_tuner_gain(RtlSdrDev, pos);
-				ExtIOCallback(-1, EXTIO_CHANGED_ATT, 0, NULL);
+				EXTIO_SET_STATUS(ExtIOCallback, EXTIO_CHANGED_ATT);
 			}
 			return TRUE;
 		}
