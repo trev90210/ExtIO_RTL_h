@@ -1,33 +1,9 @@
-/*
- * ExtIO wrapper for librtlsdr
- * Copyleft by José Araújo [josemariaaraujo@gmail.com]
- * Don't care about licenses (DWTFYW), but per GNU I think I'm required to leave the following here:
- *
- * Based on original work from Ian Gilmour (MM6DOS) and Youssef Touil from SDRSharp
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
-/*
- * Simple ExtIO wrapper for librtlsdr.
- *
- * These guys done a great job on the lib. All credits to them
- *
- * Original librtlsdr git:
- *
- * git://git.osmocom.org/rtl-sdr
- */
+// SPDX-FileCopyrightText: 2013 José Araújo <josemariaaraujo@gmail.com>
+// SPDX-FileCopyrightText: 2020 Jorge Maidana <jorgem.seq@gmail.com>
+//
+// SPDX-License-Identifier: GPL-2.0-or-later
+//
+// ExtIO_RTL.cpp - ExtIO wrapper for librtlsdr
 
 #include <stdio.h>
 #include <windows.h>
