@@ -9,7 +9,7 @@
 #define ARRAY_SSIZE(arr)	((SSIZE_T)ARRAY_SIZE(arr))
 
 #define EXTIO_RTL_MAXN		16
-#define EXTIO_RTL_NAME		"ExtIO RTL-SDR"
+#define EXTIO_RTL_NAME		"ExtIO RTL-E4000"
 #define EXTIO_RTL_ERROR(str)	MessageBox(NULL, TEXT(str), TEXT(EXTIO_RTL_NAME), \
 					   MB_OK | MB_ICONERROR)
 
@@ -37,13 +37,23 @@
 
 #define EXTIO_SET_STATUS(EXTIO_CB, EXTIO_CMD)	EXTIO_CB(-1, EXTIO_CMD, 0, NULL)
 
+// E4000
+enum e4k_if_gain_mode {
+	E4K_GAIN_MODE_DEFAULT		= 0,
+	E4K_GAIN_MODE_LINEARITY		= 1,
+	E4K_GAIN_MODE_SENSITIVITY	= 2,
+};
+
 extern HMODULE hInst;
 
 extern "C" void __stdcall CloseHW(void);
+extern "C" int __stdcall ExtIoGetActualMgcIdx(void);
 extern "C" int __stdcall ExtIoGetActualSrateIdx(void);
+extern "C" int __stdcall ExtIoGetMGCs(int idx, float *gain);
 extern "C" int __stdcall ExtIoGetSetting(int idx, char *description, char *value);
 extern "C" int __stdcall ExtIoGetSrates(int idx, double *samplerate);
 extern "C" void __stdcall ExtIoSDRInfo(int SDRInfo, int /* additionalValue */, void * /* additionalPtr */);
+extern "C" int __stdcall ExtIoSetMGC(int idx);
 extern "C" void __stdcall ExtIoSetSetting(int idx, const char *value);
 extern "C" int __stdcall ExtIoSetSrate(int idx);
 extern "C" int __stdcall GetActualAttIdx(void);

@@ -23,6 +23,11 @@
 #define IDC_TUNER_OFF_TUNING	1013
 #define IDC_RTL_BIAS_TEE	1014
 
+// E4000
+#define IDC_E4K_IF_GAIN		1015
+#define IDC_E4K_IF_GAIN_CTL	1016
+#define IDC_E4K_IF_GAIN_MODE	1017
+
 // Next default values for new objects
 //
 #ifdef APSTUDIO_INVOKED

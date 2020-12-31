@@ -54,6 +54,33 @@ static const TCHAR *RtlSdrTunerArr[] = {
 	TEXT("R828D Gain")
 };
 
+// E4000
+static const int RtlSdrE4KIFGainArr[] = { 1, 2, 3, 4, 5, 6 };
+
+// E4000
+static const TCHAR *RtlSdrE4KIFModeArr[] = {
+	TEXT("Default"),
+	TEXT("Linearity"),
+	TEXT("Sensitivity")
+};
+
+// E4000
+static const int8_t RtlSdrE4KIFGainModeArr[][6][6] = {
+	{	// Default
+		{ 60, 0, 0, 0, 90, 90 },	{ 60, 0, 0, 0, 90, 90 },
+		{ 60, 0, 0, 0, 90, 90 },	{ 60, 0, 0, 0, 90, 90 },
+		{ 60, 0, 0, 0, 90, 90 },	{ 60, 0, 0, 0, 90, 90 }
+	}, {	// Linearity
+		{ -30,  0, 0,  0,  90, 60 },	{ -30,  0, 0,  0,  90,  90 },
+		{ -30,  0, 0, 10, 120, 90 },	{ -30, 30, 0, 10, 120,  90 },
+		{ -30, 60, 0,  0, 120, 90 },	{ -30, 60, 0,  0, 120, 120 }
+	}, {	// Sensitivity
+		{ -30,  0, 0, 20, 30, 30 },	{ -30, 30, 0, 10, 60, 30 },
+		{  60,  0, 0,  0, 60, 30 },	{  60,  0, 0, 20, 90, 30 },
+		{  60, 30, 0, 10, 90, 60 },	{  60, 60, 0,  0, 90, 90 }
+	}
+};
+
 // ExtIO Options
 static int ExtIOSampleRate = 3;     // id: 00 default: 2.4 Msps
 static int ExtIOTunerAGC = 1;       // id: 01 default: Enabled
@@ -64,6 +91,9 @@ static int ExtIOBufferSize = 6;     // id: 05 default: 64 KiB
 static int ExtIOOffsetTuning = 1;   // id: 06 default: Enabled
 static int ExtIODirSampling = 0;    // id: 07 default: Disabled
 static uint32_t ExtIODevIdx = 0;    // id: 08 default: 0
+// E4000
+static int ExtIOE4KIFGain = 0;      // id: 09 default: 0
+static int ExtIOE4KIFMode = 0;      // id: 10 default: Default
 
 static int ExtIOInitialized;
 static int ExtIODataU8;
@@ -77,6 +107,12 @@ static int *RtlSdrTunerGainsArr;
 static int RtlSdrTunerGainsCount;
 static int RtlSdrTunerGain;
 static int RtlSdrPllLocked; // 0 = Locked
+
+// E4000
+static int RtlSdrE4KIFGain;
+
+static int ExtIOSetE4KIFGain(HWND hwndDlg, HWND hE4KIFGain, int setpos,
+			     int gain, int mode);
 
 // Buffer
 static const uint32_t RtlSdrBufSizeArr[] = { 1, 2, 4, 8, 16, 32, 64, 128, 256 }; // In KiB
@@ -301,10 +337,45 @@ extern "C" int __stdcall SetAttenuator(int idx)
 
 		_stprintf_s(tunergain, 256, TEXT("%2.1f dB"), (float)(pos / 10.0));
 		Static_SetText(GetDlgItem(h_dialog, IDC_TUNER_GAIN), tunergain);
-		if (pos != RtlSdrTunerGain)
+		if (pos != RtlSdrTunerGain) {
 			rtlsdr_set_tuner_gain(RtlSdrDev, pos);
+			ExtIOSetE4KIFGain(h_dialog, GetDlgItem(h_dialog, IDC_E4K_IF_GAIN_CTL), 0,
+				(int)-SendMessage(GetDlgItem(h_dialog, IDC_E4K_IF_GAIN_CTL),
+						  TBM_GETPOS, (WPARAM)0, (LPARAM)0),
+				ComboBox_GetCurSel(GetDlgItem
+				(h_dialog, IDC_E4K_IF_GAIN_MODE)));
+		}
 	}
 	RtlSdrTunerGain = pos;
+	return 0;
+}
+
+extern "C" int __stdcall ExtIoGetMGCs(int idx, float *gain)
+{
+	if (idx < 0 || idx >= ARRAY_SSIZE(RtlSdrE4KIFGainArr))
+		return -1;
+
+	*gain = (float)(RtlSdrE4KIFGainArr[idx] * 5.0);
+	return 0;
+}
+
+extern "C" int __stdcall ExtIoGetActualMgcIdx(void)
+{
+	for (int i = 0; i < ARRAY_SSIZE(RtlSdrE4KIFGainArr); i++) {
+		if (RtlSdrE4KIFGain == RtlSdrE4KIFGainArr[i])
+			return i;
+	}
+	return -1;
+}
+
+extern "C" int __stdcall ExtIoSetMGC(int idx)
+{
+	if (idx < 0 || idx >= ARRAY_SSIZE(RtlSdrE4KIFGainArr))
+		return -1;
+
+	ExtIOSetE4KIFGain(h_dialog, GetDlgItem(h_dialog, IDC_E4K_IF_GAIN_CTL), 1, idx,
+			  ComboBox_GetCurSel(GetDlgItem(h_dialog, IDC_E4K_IF_GAIN_MODE)));
+	RtlSdrE4KIFGain = RtlSdrE4KIFGainArr[idx];
 	return 0;
 }
 
@@ -367,6 +438,19 @@ extern "C" int __stdcall ExtIoGetSetting(int idx, char *description, char *value
 		_snprintf(value, 1024, "%d",
 			  ComboBox_GetCurSel(GetDlgItem(h_dialog, IDC_RTL_DEVICE)));
 		return 0;
+	case 9: {
+		int pos = (int)-SendMessage(GetDlgItem(h_dialog, IDC_E4K_IF_GAIN_CTL),
+					    TBM_GETPOS, (WPARAM)0, (LPARAM)0);
+
+		_snprintf(description, 1024, "%s", "E4000IFGain");
+		_snprintf(value, 1024, "%d", pos);
+		return 0;
+	}
+	case 10:
+		_snprintf(description, 1024, "%s", "E4000IFGainMode");
+		_snprintf(value, 1024, "%d",
+			  ComboBox_GetCurSel(GetDlgItem(h_dialog, IDC_E4K_IF_GAIN_MODE)));
+		return 0;
 	}
 	return -1;
 }
@@ -414,6 +498,16 @@ extern "C" void __stdcall ExtIoSetSetting(int idx, const char *value)
 	case 8:
 		ExtIOVal = atoi(value);
 		ExtIODevIdx = ExtIOVal;
+		break;
+	case 9:
+		ExtIOVal = atoi(value);
+		if (ExtIOVal >= 0 && ExtIOVal < ARRAY_SSIZE(RtlSdrE4KIFGainArr))
+			ExtIOE4KIFGain = ExtIOVal;
+		break;
+	case 10:
+		ExtIOVal = atoi(value);
+		if (ExtIOVal >= 0 && ExtIOVal < ARRAY_SSIZE(RtlSdrE4KIFModeArr))
+			ExtIOE4KIFMode = ExtIOVal;
 		break;
 	}
 }
@@ -545,9 +639,44 @@ static void ExtIOTunerGainsConf(HWND hwndDlg, HWND hGain)
 	RtlSdrTunerGain = RtlSdrTunerGainsArr[TunerGainIdx];
 }
 
+// E4000
+static int ExtIOSetE4KIFGain(HWND hwndDlg, HWND hE4KIFGain, int setpos,
+			     int gain, int mode)
+{
+	if (mode < E4K_GAIN_MODE_DEFAULT)
+		mode = E4K_GAIN_MODE_DEFAULT;
+	else if (mode > E4K_GAIN_MODE_SENSITIVITY)
+		mode = E4K_GAIN_MODE_SENSITIVITY;
+
+	if (gain < 0)
+		gain = 0;
+	else if (gain >= ARRAY_SSIZE(RtlSdrE4KIFGainArr))
+		gain = ARRAY_SSIZE(RtlSdrE4KIFGainArr) - 1;
+
+	if (setpos)
+		SendMessage(hE4KIFGain, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)-gain);
+	if (!mode) {
+		EnableWindow(hE4KIFGain, FALSE);
+		Static_SetText(GetDlgItem(hwndDlg, IDC_E4K_IF_GAIN), TEXT("Default"));
+	} else {
+		TCHAR e4k_ifgain[256];
+
+		EnableWindow(hE4KIFGain, TRUE);
+		_stprintf_s(e4k_ifgain, 256, TEXT("%2.1f dB"),
+			   (float)(RtlSdrE4KIFGainArr[gain] * 5.0));
+		Static_SetText(GetDlgItem(hwndDlg, IDC_E4K_IF_GAIN), e4k_ifgain);
+	}
+
+	for (int i = 0; i < 6; i++)
+		rtlsdr_set_tuner_if_gain(RtlSdrDev, i + 1,
+					 RtlSdrE4KIFGainModeArr[mode][gain][i]);
+	return 0;
+}
+
 static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	static HWND hGain;
+	static HWND hE4KIFGain;
 	static HBRUSH BRUSH_RED = CreateSolidBrush(RGB(255, 0, 0));
 	static HBRUSH BRUSH_GREEN = CreateSolidBrush(RGB(0, 255, 0));
 
@@ -562,6 +691,13 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 		ComboBox_SetCurSel(GetDlgItem(hwndDlg, IDC_RTL_DIR_SAMPLING),
 				   ExtIODirSampling);
 		rtlsdr_set_direct_sampling(RtlSdrDev, ExtIODirSampling);
+
+		for (int i = 0; i < ARRAY_SSIZE(RtlSdrE4KIFModeArr); i++)
+			ComboBox_AddString(GetDlgItem(hwndDlg, IDC_E4K_IF_GAIN_MODE),
+					   RtlSdrE4KIFModeArr[i]);
+
+		ComboBox_SetCurSel(GetDlgItem(hwndDlg, IDC_E4K_IF_GAIN_MODE),
+				   ExtIOE4KIFMode);
 
 		Button_SetCheck(GetDlgItem(hwndDlg, IDC_TUNER_AGC),
 				ExtIOTunerAGC ? BST_CHECKED : BST_UNCHECKED);
@@ -629,6 +765,15 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 			Static_SetText(GetDlgItem(hwndDlg, IDC_TUNER_GAIN), tunergain);
 			rtlsdr_set_tuner_gain(RtlSdrDev, pos);
 		}
+
+		hE4KIFGain = GetDlgItem(hwndDlg, IDC_E4K_IF_GAIN_CTL);
+		SendMessage(hE4KIFGain, TBM_SETRANGE, (WPARAM)TRUE,
+			    MAKELPARAM(-(ARRAY_SSIZE(RtlSdrE4KIFGainArr) - 1), 0));
+		SendMessage(hE4KIFGain, TBM_CLEARTICS, (WPARAM)FALSE, (LPARAM)0);
+		for (int i = 0; i < ARRAY_SSIZE(RtlSdrE4KIFGainArr); i++)
+			SendMessage(hE4KIFGain, TBM_SETTIC, (WPARAM)0, (LPARAM)-i);
+		ExtIOSetE4KIFGain(hwndDlg, hE4KIFGain, 1, ExtIOE4KIFGain, ExtIOE4KIFMode);
+		RtlSdrE4KIFGain = RtlSdrE4KIFGainArr[ExtIOE4KIFGain];
 		return TRUE;
 	}
 	case WM_COMMAND:
@@ -678,6 +823,12 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 					      (hwndDlg, IDC_TUNER_GAIN), tunergain);
 				rtlsdr_set_tuner_gain(RtlSdrDev, pos);
 			}
+
+			ExtIOSetE4KIFGain(hwndDlg, hE4KIFGain, 0,
+				(int)-SendMessage(hE4KIFGain, TBM_GETPOS,
+						 (WPARAM)0, (LPARAM)0),
+				ComboBox_GetCurSel(GetDlgItem
+				(hwndDlg, IDC_E4K_IF_GAIN_MODE)));
 			return TRUE;
 		case IDC_RTL_SAMPLE_RATE:
 			if (GET_WM_COMMAND_CMD(wParam, lParam) == CBN_SELCHANGE) {
@@ -727,6 +878,12 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 						rtlsdr_set_tuner_gain_mode(RtlSdrDev, 1);
 						rtlsdr_set_tuner_gain(RtlSdrDev, pos);
 					}
+
+					ExtIOSetE4KIFGain(hwndDlg, hE4KIFGain, 0,
+						(int)-SendMessage(hE4KIFGain, TBM_GETPOS,
+								 (WPARAM)0, (LPARAM)0),
+						ComboBox_GetCurSel(GetDlgItem
+						(hwndDlg, IDC_E4K_IF_GAIN_MODE)));
 				}
 				EXTIO_SET_STATUS(ExtIOCallback, EXTIO_CHANGED_LO);
 			}
@@ -734,6 +891,7 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 		case IDC_RTL_DEVICE:
 			if (GET_WM_COMMAND_CMD(wParam, lParam) == CBN_SELCHANGE) {
 				int currppm;
+				int curr_e4k_ifgain;
 				uint32_t currsrate;
 				TCHAR ppm[256];
 				TCHAR srate[256];
@@ -744,6 +902,8 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 				ComboBox_GetText(GetDlgItem
 						(hwndDlg, IDC_RTL_SAMPLE_RATE), srate, 256);
 				currsrate = srate_validate(_ttoi(srate));
+				curr_e4k_ifgain = (int)-SendMessage(hE4KIFGain,
+							TBM_GETPOS, (WPARAM)0, (LPARAM)0);
 
 				rtlsdr_close(RtlSdrDev);
 				RtlSdrDev = NULL;
@@ -799,6 +959,11 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 						      (hwndDlg, IDC_TUNER_GAIN), tunergain);
 					rtlsdr_set_tuner_gain(RtlSdrDev, pos);
 				}
+
+				ExtIOSetE4KIFGain(hwndDlg, hE4KIFGain, 1, curr_e4k_ifgain,
+						  ComboBox_GetCurSel(GetDlgItem
+						  (hwndDlg, IDC_E4K_IF_GAIN_MODE)));
+				RtlSdrE4KIFGain = RtlSdrE4KIFGainArr[curr_e4k_ifgain];
 			}
 			return TRUE;
 #ifdef EXTIO_WITH_BIAS_TEE
@@ -810,6 +975,14 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 				rtlsdr_set_bias_tee(RtlSdrDev, 0);
 			return TRUE;
 #endif
+		case IDC_E4K_IF_GAIN_MODE:
+			if (GET_WM_COMMAND_CMD(wParam, lParam) == CBN_SELCHANGE)
+				ExtIOSetE4KIFGain(hwndDlg, hE4KIFGain, 0,
+					(int)-SendMessage(hE4KIFGain, TBM_GETPOS,
+							 (WPARAM)0, (LPARAM)0),
+					ComboBox_GetCurSel(GET_WM_COMMAND_HWND
+					(wParam, lParam)));
+			return TRUE;
 		}
 		break;
 	case WM_VSCROLL:
@@ -838,6 +1011,24 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 			if (pos != RtlSdrTunerGain) {
 				RtlSdrTunerGain = pos;
 				rtlsdr_set_tuner_gain(RtlSdrDev, pos);
+				ExtIOSetE4KIFGain(hwndDlg, hE4KIFGain, 0,
+					(int)-SendMessage(hE4KIFGain, TBM_GETPOS,
+							 (WPARAM)0, (LPARAM)0),
+					ComboBox_GetCurSel(GetDlgItem
+					(hwndDlg, IDC_E4K_IF_GAIN_MODE)));
+				EXTIO_SET_STATUS(ExtIOCallback, EXTIO_CHANGED_ATT);
+			}
+			return TRUE;
+		}
+		if ((HWND)lParam == hE4KIFGain) {
+			int pos = (int)-SendMessage(hE4KIFGain, TBM_GETPOS,
+						   (WPARAM)0, (LPARAM)0);
+
+			if (RtlSdrE4KIFGainArr[pos] != RtlSdrE4KIFGain) {
+				ExtIOSetE4KIFGain(hwndDlg, hE4KIFGain, 0, pos,
+						  ComboBox_GetCurSel(GetDlgItem
+						  (hwndDlg, IDC_E4K_IF_GAIN_MODE)));
+				RtlSdrE4KIFGain = RtlSdrE4KIFGainArr[pos];
 				EXTIO_SET_STATUS(ExtIOCallback, EXTIO_CHANGED_ATT);
 			}
 			return TRUE;

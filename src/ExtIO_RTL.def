@@ -2,10 +2,13 @@ LIBRARY ExtIO_RTL
 EXPORTS
 
 CloseHW
+ExtIoGetActualMgcIdx
 ExtIoGetActualSrateIdx
+ExtIoGetMGCs
 ExtIoGetSetting
 ExtIoGetSrates
 ExtIoSDRInfo
+ExtIoSetMGC
 ExtIoSetSetting
 ExtIoSetSrate
 GetActualAttIdx

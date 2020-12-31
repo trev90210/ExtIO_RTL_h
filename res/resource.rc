@@ -17,10 +17,10 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 // Dialog
 //
 
-DLG_MAIN DIALOGEX 0, 0, 160, 170
+DLG_MAIN DIALOGEX 0, 0, 244, 170
 STYLE DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | DS_CENTER | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
 EXSTYLE WS_EX_TOPMOST
-CAPTION "ExtIO RTL-SDR"
+CAPTION "ExtIO RTL-SDR E4000"
 FONT 8, "Ms Shell Dlg", 0, 0, 0x0
 BEGIN
     LTEXT           "Device",IDC_STATIC,8,6,80,8
@@ -60,6 +60,13 @@ BEGIN
     CONTROL         "RTL AGC",IDC_RTL_AGC,"Button",BS_AUTOCHECKBOX | BS_LEFTTEXT | BS_CENTER | WS_TABSTOP,88,140,60,8,WS_EX_TRANSPARENT
     CONTROL         "Offset Tuning",IDC_TUNER_OFF_TUNING,"Button",BS_AUTOCHECKBOX | BS_LEFTTEXT | BS_CENTER | WS_TABSTOP,88,154,60,8,WS_EX_TRANSPARENT
 #endif
+
+// E4000
+    CTEXT           "E4000 IF Gain",IDC_STATIC,176,34,60,10
+    CTEXT           "Default",IDC_E4K_IF_GAIN,176,44,60,10
+    CONTROL         "",IDC_E4K_IF_GAIN_CTL,"msctls_trackbar32",TBS_VERT | TBS_BOTH | WS_TABSTOP,192,56,30,66
+    CTEXT           "IF Gain Mode",IDC_STATIC,178,126,57,8
+    COMBOBOX        IDC_E4K_IF_GAIN_MODE,178,136,54,90,CBS_DROPDOWNLIST | CBS_HASSTRINGS
 END
 
 
@@ -149,12 +156,12 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "FileDescription", "RTL-SDR ExtIO plugin"
+            VALUE "FileDescription", "RTL-E4000 ExtIO plugin"
             VALUE "FileVersion", DLL_VERSION_STR
-            VALUE "InternalName", "ExtIO_RTL"
+            VALUE "InternalName", "ExtIO_RTL_E4000"
             VALUE "LegalCopyright", "GPLv2 (rtl-sdr) - LGPLv2.1 (libusb)"
-            VALUE "OriginalFilename", "ExtIO_RTL.dll"
-            VALUE "ProductName", "ExtIO_RTL"
+            VALUE "OriginalFilename", "ExtIO_RTL_E4000.dll"
+            VALUE "ProductName", "ExtIO_RTL_E4000"
             VALUE "ProductVersion", DLL_VERSION_STR
         END
     END
