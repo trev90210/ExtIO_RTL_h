@@ -44,6 +44,16 @@ static const TCHAR *RtlSdrDirSamplingArr[] = {
 	TEXT("Q input")
 };
 
+static const TCHAR *RtlSdrTunerArr[] = {
+	TEXT("Tuner Gain"),
+	TEXT("E4000 Gain"),
+	TEXT("FC0012 Gain"),
+	TEXT("FC0013 Gain"),
+	TEXT("FC2580 Gain"),
+	TEXT("R820T Gain"),
+	TEXT("R828D Gain")
+};
+
 // ExtIO Options
 static int ExtIOSampleRate = 3;     // id: 00 default: 2.4 Msps
 static int ExtIOTunerAGC = 1;       // id: 01 default: Enabled
@@ -81,18 +91,18 @@ static void (*ExtIOCallback)(int, int, float, void *); // ExtIO Callback
 extern "C" bool __stdcall InitHW(char *name, char *model, int &hwtype)
 {
 	RtlSdrDevCount = rtlsdr_get_device_count();
-	if (!RtlSdrDevCount)
-		goto fail;
+	if (!RtlSdrDevCount) {
+		MessageBox(NULL, TEXT("No RTL-SDR devices found"),
+			   TEXT(EXTIO_RTL_NAME), MB_OK | MB_ICONERROR);
+		return FALSE;
+	}
+	if (RtlSdrDevCount > EXTIO_RTL_MAXN)
+		RtlSdrDevCount = EXTIO_RTL_MAXN;
 
 	strcpy_s(name, 16, EXTIO_RTL_NAME);
 	strcpy_s(model, 16, "USB");
 	hwtype = EXTIO_USBDATA_16;
 	return TRUE;
-
-fail:
-	MessageBox(NULL, TEXT("No RTL-SDR devices found"),
-		   TEXT(EXTIO_RTL_NAME), MB_OK | MB_ICONERROR);
-	return FALSE;
 }
 
 extern "C" int __stdcall GetStatus(void)
@@ -480,6 +490,37 @@ static void RtlSdrThreadProc(void * /* param */)
 	_endthread();
 }
 
+static void ExtIOTunerGainsConf(HWND hwndDlg, HWND hGain)
+{
+	int TunerIdx, TunerGainIdx = 0;
+
+	TunerIdx = (int)rtlsdr_get_tuner_type(RtlSdrDev);
+	if (TunerIdx < 0 || TunerIdx >= (sizeof(RtlSdrTunerArr) / sizeof(RtlSdrTunerArr[0])))
+		TunerIdx = 0;
+	Static_SetText(GetDlgItem(hwndDlg, IDC_TUNER_GAIN_NAME),
+		       RtlSdrTunerArr[TunerIdx]);
+
+	RtlSdrTunerGainsCount = rtlsdr_get_tuner_gains(RtlSdrDev, RtlSdrTunerGainsArr);
+	if (RtlSdrTunerGainsCount < 1)
+		RtlSdrTunerGainsCount = 1;
+	else if (RtlSdrTunerGainsCount > RTLSDR_MAXTUNERGAINS)
+		RtlSdrTunerGainsCount = RTLSDR_MAXTUNERGAINS;
+	SendMessage(hGain, TBM_SETRANGEMIN, (WPARAM)TRUE,
+		   (LPARAM)-RtlSdrTunerGainsArr[RtlSdrTunerGainsCount - 1]);
+	SendMessage(hGain, TBM_SETRANGEMAX, (WPARAM)TRUE,
+		   (LPARAM)-RtlSdrTunerGainsArr[0]);
+	SendMessage(hGain, TBM_CLEARTICS, (WPARAM)FALSE, (LPARAM)0);
+	for (int i = 0; i < RtlSdrTunerGainsCount; i++) {
+		SendMessage(hGain, TBM_SETTIC, (WPARAM)0,
+			   (LPARAM)-RtlSdrTunerGainsArr[i]);
+		if (ExtIOTunerGain == RtlSdrTunerGainsArr[i])
+			TunerGainIdx = i;
+	}
+	SendMessage(hGain, TBM_SETPOS, (WPARAM)TRUE,
+		   (LPARAM)-RtlSdrTunerGainsArr[TunerGainIdx]);
+	RtlSdrTunerGain = RtlSdrTunerGainsArr[TunerGainIdx];
+}
+
 static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	static HWND hGain;
@@ -488,7 +529,6 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 
 	switch (uMsg) {
 	case WM_INITDIALOG: {
-		int TunerGainIdx = 0;
 		TCHAR ppm[256];
 
 		for (int i = 0; i < (sizeof(RtlSdrDirSamplingArr) / sizeof(RtlSdrDirSamplingArr[0])); i++)
@@ -544,20 +584,11 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 		ComboBox_SetCurSel(GetDlgItem(hwndDlg, IDC_RTL_BUFFER), ExtIOBufferSize);
 		RtlSdrBufSize = RtlSdrBufSizeArr[ExtIOBufferSize] * 1024;
 
-		RtlSdrTunerGainsCount = rtlsdr_get_tuner_gains(RtlSdrDev, NULL);
-		RtlSdrTunerGainsArr = new int[RtlSdrTunerGainsCount];
 		hGain = GetDlgItem(hwndDlg, IDC_TUNER_GAIN_CTL);
-
-		rtlsdr_get_tuner_gains(RtlSdrDev, RtlSdrTunerGainsArr);
-		SendMessage(hGain, TBM_SETRANGEMIN, (WPARAM)TRUE, (LPARAM)-RtlSdrTunerGainsArr[RtlSdrTunerGainsCount - 1]);
-		SendMessage(hGain, TBM_SETRANGEMAX, (WPARAM)TRUE, (LPARAM)-RtlSdrTunerGainsArr[0]);
-		for (int i = 0; i < RtlSdrTunerGainsCount; i++) {
-			SendMessage(hGain, TBM_SETTIC, (WPARAM)0, (LPARAM)-RtlSdrTunerGainsArr[i]);
-			if (ExtIOTunerGain == RtlSdrTunerGainsArr[i])
-				TunerGainIdx = i;
-		}
-		SendMessage(hGain, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)-RtlSdrTunerGainsArr[TunerGainIdx]);
-		RtlSdrTunerGain = RtlSdrTunerGainsArr[TunerGainIdx];
+		RtlSdrTunerGainsArr = new int[RTLSDR_MAXTUNERGAINS];
+		for (int i = 0; i < RTLSDR_MAXTUNERGAINS; i++)
+			RtlSdrTunerGainsArr[i] = 0;
+		ExtIOTunerGainsConf(hwndDlg, hGain);
 
 		if (ExtIOTunerAGC) {
 			EnableWindow(hGain, FALSE);
@@ -674,16 +705,68 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 			return TRUE;
 		case IDC_RTL_DEVICE:
 			if (GET_WM_COMMAND_CMD(wParam, lParam) == CBN_SELCHANGE) {
-				uint32_t currsrate = rtlsdr_get_sample_rate(RtlSdrDev);
+				int currppm;
+				uint32_t currsrate;
+				TCHAR ppm[256];
+				TCHAR srate[256];
+
+				Edit_GetText(GetDlgItem
+						(hwndDlg, IDC_RTL_PPM), ppm, 256);
+				currppm = ppm_validate(_ttoi(ppm));
+				ComboBox_GetText(GetDlgItem
+						(hwndDlg, IDC_RTL_SAMPLE_RATE), srate, 256);
+				currsrate = srate_validate(_ttoi(srate));
 
 				rtlsdr_close(RtlSdrDev);
 				RtlSdrDev = NULL;
-				if (rtlsdr_open(&RtlSdrDev, (uint32_t)ComboBox_GetCurSel(GET_WM_COMMAND_HWND(wParam, lParam))) < 0) {
+				if (rtlsdr_open(&RtlSdrDev, (uint32_t)ComboBox_GetCurSel
+						(GET_WM_COMMAND_HWND(wParam, lParam))) < 0) {
 					MessageBox(NULL, TEXT("Couldn't open device!"),
 						   TEXT(EXTIO_RTL_NAME), MB_OK | MB_ICONERROR);
 					return TRUE;
 				}
 				rtlsdr_set_sample_rate(RtlSdrDev, currsrate);
+				rtlsdr_set_freq_correction(RtlSdrDev, currppm);
+				rtlsdr_set_direct_sampling(RtlSdrDev, ComboBox_GetCurSel
+					(GetDlgItem(hwndDlg, IDC_RTL_DIR_SAMPLING)));
+				ExtIOCallback(-1, EXTIO_CHANGED_SR, 0, NULL);
+
+				if (Button_GetCheck(GetDlgItem
+					(hwndDlg, IDC_TUNER_AGC)) == BST_CHECKED)
+					rtlsdr_set_tuner_gain_mode(RtlSdrDev, 0);
+				else
+					rtlsdr_set_tuner_gain_mode(RtlSdrDev, 1);
+
+				if (Button_GetCheck(GetDlgItem
+					(hwndDlg, IDC_RTL_AGC)) == BST_CHECKED)
+					rtlsdr_set_agc_mode(RtlSdrDev, 1);
+				else
+					rtlsdr_set_agc_mode(RtlSdrDev, 0);
+
+				if (Button_GetCheck(GetDlgItem
+					(hwndDlg, IDC_TUNER_OFF_TUNING)) == BST_CHECKED)
+					rtlsdr_set_offset_tuning(RtlSdrDev, 1);
+				else
+					rtlsdr_set_offset_tuning(RtlSdrDev, 0);
+
+				ExtIOTunerGainsConf(hwndDlg, hGain);
+				ExtIOCallback(-1, EXTIO_CHANGED_RF_IF, 0, NULL);
+
+				if (Button_GetCheck(GetDlgItem
+					(hwndDlg, IDC_TUNER_AGC)) == BST_CHECKED) {
+					Static_SetText(GetDlgItem
+						      (hwndDlg, IDC_TUNER_GAIN), TEXT("AGC"));
+				} else {
+					int pos = (int)-SendMessage(hGain, TBM_GETPOS,
+								   (WPARAM)0, (LPARAM)0);
+					TCHAR tunergain[256];
+
+					_stprintf_s(tunergain, 256, TEXT("%2.1f dB"),
+						   (float)(pos / 10.0));
+					Static_SetText(GetDlgItem
+						      (hwndDlg, IDC_TUNER_GAIN), tunergain);
+					rtlsdr_set_tuner_gain(RtlSdrDev, pos);
+				}
 			}
 			return TRUE;
 		}

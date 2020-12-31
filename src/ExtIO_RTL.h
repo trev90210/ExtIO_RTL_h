@@ -5,6 +5,7 @@
 
 #include <stdint.h>
 
+#define EXTIO_RTL_MAXN		16
 #define EXTIO_RTL_NAME		"ExtIO RTL-SDR"
 
 /* RTLSDR */
@@ -14,6 +15,7 @@
 #define RTLSDR_MAXLOSRATE	300000
 #define RTLSDR_MINHISRATE	900001
 #define RTLSDR_MAXHISRATE	3200000
+#define RTLSDR_MAXTUNERGAINS	32
 
 /* ExtIO HW Type Codes */
 #define EXTIO_USBDATA_16	3
@@ -22,6 +24,7 @@
 #define EXTIO_CHANGED_SR	100
 #define EXTIO_CHANGED_LO	101
 #define EXTIO_CHANGED_ATT	125
+#define EXTIO_CHANGED_RF_IF	136
 
 extern HMODULE hInst;
 

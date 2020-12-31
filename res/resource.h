@@ -15,11 +15,12 @@
 #define IDC_RTL_PPM		1005
 #define IDC_RTL_PPM_CTL		1006
 #define IDC_TUNER_PLL		1007
-#define IDC_TUNER_GAIN		1008
-#define IDC_TUNER_GAIN_CTL	1009
-#define IDC_TUNER_AGC		1010
-#define IDC_RTL_AGC		1011
-#define IDC_TUNER_OFF_TUNING	1012
+#define IDC_TUNER_GAIN_NAME	1008
+#define IDC_TUNER_GAIN		1009
+#define IDC_TUNER_GAIN_CTL	1010
+#define IDC_TUNER_AGC		1011
+#define IDC_RTL_AGC		1012
+#define IDC_TUNER_OFF_TUNING	1013
 
 // Next default values for new objects
 //
