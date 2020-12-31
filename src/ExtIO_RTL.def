@@ -1,30 +1,24 @@
 LIBRARY ExtIO_RTL
 EXPORTS
-; HW
-    CloseHW
-    GetHWLO
-    GetHWSR
-    InitHW
-    OpenHW
-    SetHWLO
-    StartHW
-    StopHW
 
-; Window
-    GetStatus
-    HideGUI
-    SetCallback
-    ShowGUI
-    SwitchGUI
-
-; Samplerate / Bandwidth
-    ExtIoGetSrates
-    ExtIoGetActualSrateIdx
-    ExtIoSetSrate
-
-; Settings
-    ExtIoGetSetting
-    ExtIoSetSetting
-    GetActualAttIdx
-    GetAttenuators
-    SetAttenuator
+CloseHW
+ExtIoGetActualSrateIdx
+ExtIoGetSetting
+ExtIoGetSrates
+ExtIoSetSetting
+ExtIoSetSrate
+GetActualAttIdx
+GetAttenuators
+GetHWLO
+GetHWSR
+GetStatus
+HideGUI
+InitHW
+OpenHW
+SetAttenuator
+SetCallback
+SetHWLO
+ShowGUI
+StartHW
+StopHW
+SwitchGUI
