@@ -61,9 +61,7 @@ static int buffer_sizes[] = { // in kBytes
 	32,
 	64,
 	128,
-	256,
-	512,
-	1024
+	256
 };
 
 static int buffer_default = 6; // 64kBytes
