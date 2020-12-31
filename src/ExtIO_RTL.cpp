@@ -225,7 +225,7 @@ extern "C" long __stdcall GetHWSR(void)
 
 extern "C" int __stdcall ExtIoGetSrates(int idx, double *samplerate)
 {
-	if (idx < 0 || idx >= (sizeof(RtlSdrSampleRateArr) / sizeof(RtlSdrSampleRateArr[0])))
+	if (idx < 0 || idx >= ARRAY_SSIZE(RtlSdrSampleRateArr))
 		return -1;
 
 	*samplerate = (double)(RtlSdrSampleRateArr[idx].value * 1.0);
@@ -239,7 +239,7 @@ extern "C" int __stdcall ExtIoGetActualSrateIdx(void)
 
 extern "C" int __stdcall ExtIoSetSrate(int idx)
 {
-	if (idx < 0 || idx >= (sizeof(RtlSdrSampleRateArr) / sizeof(RtlSdrSampleRateArr[0])))
+	if (idx < 0 || idx >= ARRAY_SSIZE(RtlSdrSampleRateArr))
 		return -1;
 
 	rtlsdr_set_sample_rate(RtlSdrDev, RtlSdrSampleRateArr[idx].value);
@@ -358,7 +358,7 @@ extern "C" void __stdcall ExtIoSetSetting(int idx, const char *value)
 	switch (idx) {
 	case 0:
 		ExtIOVal = atoi(value);
-		if (ExtIOVal >= 0 && ExtIOVal < (sizeof(RtlSdrSampleRateArr) / sizeof(RtlSdrSampleRateArr[0])))
+		if (ExtIOVal >= 0 && ExtIOVal < ARRAY_SSIZE(RtlSdrSampleRateArr))
 			ExtIOSampleRate = ExtIOVal;
 		break;
 	case 1:
@@ -379,7 +379,7 @@ extern "C" void __stdcall ExtIoSetSetting(int idx, const char *value)
 		break;
 	case 5:
 		ExtIOVal = atoi(value);
-		if (ExtIOVal >= 0 && ExtIOVal < (sizeof(RtlSdrBufSizeArr) / sizeof(RtlSdrBufSizeArr[0])))
+		if (ExtIOVal >= 0 && ExtIOVal < ARRAY_SSIZE(RtlSdrBufSizeArr))
 			ExtIOBufferSize = ExtIOVal;
 		break;
 	case 6:
@@ -388,7 +388,7 @@ extern "C" void __stdcall ExtIoSetSetting(int idx, const char *value)
 		break;
 	case 7:
 		ExtIOVal = atoi(value);
-		if (ExtIOVal >= 0 && ExtIOVal < (sizeof(RtlSdrDirSamplingArr) / sizeof(RtlSdrDirSamplingArr[0])))
+		if (ExtIOVal >= 0 && ExtIOVal < ARRAY_SSIZE(RtlSdrDirSamplingArr))
 			ExtIODirSampling = ExtIOVal;
 		break;
 	case 8:
@@ -495,7 +495,7 @@ static void ExtIOTunerGainsConf(HWND hwndDlg, HWND hGain)
 	int TunerIdx, TunerGainIdx = 0;
 
 	TunerIdx = (int)rtlsdr_get_tuner_type(RtlSdrDev);
-	if (TunerIdx < 0 || TunerIdx >= (sizeof(RtlSdrTunerArr) / sizeof(RtlSdrTunerArr[0])))
+	if (TunerIdx < 0 || TunerIdx >= ARRAY_SSIZE(RtlSdrTunerArr))
 		TunerIdx = 0;
 	Static_SetText(GetDlgItem(hwndDlg, IDC_TUNER_GAIN_NAME),
 		       RtlSdrTunerArr[TunerIdx]);
@@ -531,7 +531,7 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 	case WM_INITDIALOG: {
 		TCHAR ppm[256];
 
-		for (int i = 0; i < (sizeof(RtlSdrDirSamplingArr) / sizeof(RtlSdrDirSamplingArr[0])); i++)
+		for (int i = 0; i < ARRAY_SSIZE(RtlSdrDirSamplingArr); i++)
 			ComboBox_AddString(GetDlgItem(hwndDlg, IDC_RTL_DIR_SAMPLING),
 					   RtlSdrDirSamplingArr[i]);
 
@@ -570,12 +570,12 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 		}
 		ComboBox_SetCurSel(GetDlgItem(hwndDlg, IDC_RTL_DEVICE), ExtIODevIdx);
 
-		for (int i = 0; i < (sizeof(RtlSdrSampleRateArr) / sizeof(RtlSdrSampleRateArr[0])); i++)
+		for (int i = 0; i < ARRAY_SSIZE(RtlSdrSampleRateArr); i++)
 			ComboBox_AddString(GetDlgItem(hwndDlg, IDC_RTL_SAMPLE_RATE),
 					   RtlSdrSampleRateArr[i].name);
 		ComboBox_SetCurSel(GetDlgItem(hwndDlg, IDC_RTL_SAMPLE_RATE), ExtIOSampleRate);
 
-		for (int i = 0; i < (sizeof(RtlSdrBufSizeArr) / sizeof(RtlSdrBufSizeArr[0])); i++) {
+		for (int i = 0; i < ARRAY_SSIZE(RtlSdrBufSizeArr); i++) {
 			TCHAR bufsize[256];
 
 			_stprintf_s(bufsize, 256, TEXT("%d "), RtlSdrBufSizeArr[i]);

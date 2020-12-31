@@ -5,6 +5,9 @@
 
 #include <stdint.h>
 
+#define ARRAY_SIZE(arr)		(sizeof(arr) / sizeof((arr)[0]))
+#define ARRAY_SSIZE(arr)	((SSIZE_T)ARRAY_SIZE(arr))
+
 #define EXTIO_RTL_MAXN		16
 #define EXTIO_RTL_NAME		"ExtIO RTL-SDR"
 
