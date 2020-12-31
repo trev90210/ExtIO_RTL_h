@@ -196,8 +196,8 @@ extern "C" int __stdcall StartHW(long freq)
 	}
 
 	SetHWLO(freq);
+	EnableWindow(GetDlgItem(h_dialog, IDC_BUFFER), FALSE);
 	EnableWindow(GetDlgItem(h_dialog, IDC_DEVICE), FALSE);
-	EnableWindow(GetDlgItem(h_dialog, IDC_DIRECT), FALSE);
 	return (buffer_len / 2);
 }
 
@@ -396,8 +396,8 @@ extern "C" void __stdcall StopHW()
 	Stop_Thread();
 	delete[] short_buf;
 	short_buf = NULL;
+	EnableWindow(GetDlgItem(h_dialog, IDC_BUFFER), TRUE);
 	EnableWindow(GetDlgItem(h_dialog, IDC_DEVICE), TRUE);
-	EnableWindow(GetDlgItem(h_dialog, IDC_DIRECT), TRUE);
 }
 
 extern "C" void __stdcall CloseHW()
@@ -668,11 +668,21 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 					if (GET_WM_COMMAND_CMD(wParam, lParam) == CBN_SELCHANGE) {
 						rtlsdr_set_direct_sampling(dev,
 						    ComboBox_GetCurSel(GET_WM_COMMAND_HWND(wParam, lParam)));
-						if (ComboBox_GetCurSel(GET_WM_COMMAND_HWND(wParam, lParam)) == 0)
+						if (ComboBox_GetCurSel(GET_WM_COMMAND_HWND(wParam, lParam)) == 0) {
 							if (Button_GetCheck(GetDlgItem(hwndDlg, IDC_OFFSET)) == BST_CHECKED)
 								rtlsdr_set_offset_tuning(dev, 1);
 							else
 								rtlsdr_set_offset_tuning(dev, 0);
+
+							if (Button_GetCheck(GetDlgItem(hwndDlg, IDC_TUNERAGC)) == BST_CHECKED) {
+								rtlsdr_set_tuner_gain_mode(dev, 0);
+							} else {
+								int pos = -SendMessage(hGain, TBM_GETPOS, (WPARAM)0, (LPARAM)0);
+
+								rtlsdr_set_tuner_gain_mode(dev, 1);
+								rtlsdr_set_tuner_gain(dev, pos);
+							}
+						}
 						WinradCallBack(-1, WINRAD_LOCHANGE, 0, NULL);
 					}
 					return TRUE;
