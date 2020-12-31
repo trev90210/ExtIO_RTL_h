@@ -378,7 +378,8 @@ extern "C" void __stdcall ExtIoSetSetting(int idx, const char *value)
 		break;
 	case 7:
 		ExtIOVal = atoi(value);
-		ExtIODirSampling = ExtIOVal;
+		if (ExtIOVal >= 0 && ExtIOVal < (sizeof(RtlSdrDirSamplingArr) / sizeof(RtlSdrDirSamplingArr[0])))
+			ExtIODirSampling = ExtIOVal;
 		break;
 	case 8:
 		ExtIOVal = atoi(value);
@@ -491,9 +492,11 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 		TCHAR ppm[256];
 
 		for (int i = 0; i < (sizeof(RtlSdrDirSamplingArr) / sizeof(RtlSdrDirSamplingArr[0])); i++)
-			ComboBox_AddString(GetDlgItem(hwndDlg, IDC_RTL_DIR_SAMPLING), RtlSdrDirSamplingArr[i]);
+			ComboBox_AddString(GetDlgItem(hwndDlg, IDC_RTL_DIR_SAMPLING),
+					   RtlSdrDirSamplingArr[i]);
 
-		ComboBox_SetCurSel(GetDlgItem(hwndDlg, IDC_RTL_DIR_SAMPLING), ExtIODirSampling);
+		ComboBox_SetCurSel(GetDlgItem(hwndDlg, IDC_RTL_DIR_SAMPLING),
+				   ExtIODirSampling);
 		rtlsdr_set_direct_sampling(RtlSdrDev, ExtIODirSampling);
 
 		Button_SetCheck(GetDlgItem(hwndDlg, IDC_TUNER_AGC),
@@ -649,15 +652,18 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 				rtlsdr_set_direct_sampling(RtlSdrDev,
 				    ComboBox_GetCurSel(GET_WM_COMMAND_HWND(wParam, lParam)));
 				if (ComboBox_GetCurSel(GET_WM_COMMAND_HWND(wParam, lParam)) == 0) {
-					if (Button_GetCheck(GetDlgItem(hwndDlg, IDC_TUNER_OFF_TUNING)) == BST_CHECKED)
+					if (Button_GetCheck(GetDlgItem
+						(hwndDlg, IDC_TUNER_OFF_TUNING)) == BST_CHECKED)
 						rtlsdr_set_offset_tuning(RtlSdrDev, 1);
 					else
 						rtlsdr_set_offset_tuning(RtlSdrDev, 0);
 
-					if (Button_GetCheck(GetDlgItem(hwndDlg, IDC_TUNER_AGC)) == BST_CHECKED) {
+					if (Button_GetCheck(GetDlgItem
+						(hwndDlg, IDC_TUNER_AGC)) == BST_CHECKED) {
 						rtlsdr_set_tuner_gain_mode(RtlSdrDev, 0);
 					} else {
-						int pos = (int)-SendMessage(hGain, TBM_GETPOS, (WPARAM)0, (LPARAM)0);
+						int pos = (int)-SendMessage(hGain,
+								TBM_GETPOS, (WPARAM)0, (LPARAM)0);
 
 						rtlsdr_set_tuner_gain_mode(RtlSdrDev, 1);
 						rtlsdr_set_tuner_gain(RtlSdrDev, pos);
