@@ -1,4 +1,5 @@
 COPYING text eol=lf
+Makefile.* text eol=lf
 README.md text eol=lf
 *.cpp text eol=crlf
 *.def text eol=crlf
