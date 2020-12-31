@@ -191,6 +191,7 @@ extern "C" int __stdcall StartHW(long freq)
 
 	if (Start_Thread() < 0) {
 		delete[] short_buf;
+		short_buf = NULL;
 		return -1;
 	}
 
@@ -393,7 +394,8 @@ extern "C" void __stdcall ExtIoSetSetting(int idx, const char *value)
 extern "C" void __stdcall StopHW()
 {
 	Stop_Thread();
-	delete short_buf;
+	delete[] short_buf;
+	short_buf = NULL;
 	EnableWindow(GetDlgItem(h_dialog, IDC_DEVICE), TRUE);
 	EnableWindow(GetDlgItem(h_dialog, IDC_DIRECT), TRUE);
 }
@@ -437,7 +439,7 @@ extern "C" void __stdcall SetCallback(void (*myCallBack)(int, int, float, void *
 
 void RTLSDRCallBack(unsigned char *buf, uint32_t len, void *ctx)
 {
-	if (len == buffer_len) {
+	if (short_buf && buf && (len == buffer_len)) {
 		short *short_ptr = (short *)&short_buf[0];
 		unsigned char *char_ptr = buf;
 
@@ -726,6 +728,7 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 			break;
 	case WM_DESTROY:
 			delete[] gains;
+			gains = NULL;
 			h_dialog = NULL;
 			return TRUE;
 			break;
