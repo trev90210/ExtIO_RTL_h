@@ -92,8 +92,7 @@ extern "C" bool __stdcall InitHW(char *name, char *model, int &hwtype)
 {
 	RtlSdrDevCount = rtlsdr_get_device_count();
 	if (!RtlSdrDevCount) {
-		MessageBox(NULL, TEXT("No RTL-SDR devices found"),
-			   TEXT(EXTIO_RTL_NAME), MB_OK | MB_ICONERROR);
+		EXTIO_RTL_ERROR("No RTL-SDR devices found");
 		return FALSE;
 	}
 	if (RtlSdrDevCount > EXTIO_RTL_MAXN)
@@ -118,16 +117,20 @@ extern "C" bool __stdcall OpenHW(void)
 		ExtIODevIdx = 0;
 	ret = rtlsdr_open(&RtlSdrDev, ExtIODevIdx);
 	if (ret < 0)
-		return FALSE;
+		goto fail;
 	ret = rtlsdr_set_sample_rate(RtlSdrDev,
 				     RtlSdrSampleRateArr[ExtIOSampleRate].value);
 	if (ret < 0)
-		return FALSE;
+		goto fail;
 
 	h_dialog = CreateDialog(hInst, MAKEINTRESOURCE(DLG_MAIN),
 				NULL, (DLGPROC)MainDlgProc);
 	ShowWindow(h_dialog, SW_HIDE);
 	return TRUE;
+
+fail:
+	EXTIO_RTL_ERROR("Couldn't open device!");
+	return FALSE;
 }
 
 extern "C" int64_t __stdcall SetHWLO64(int64_t LOfreq)
@@ -177,8 +180,7 @@ extern "C" int __stdcall StartHW64(int64_t LOfreq)
 
 	RtlSdrBufShort = new(std::nothrow) short[RtlSdrBufSize];
 	if (!RtlSdrBufShort) {
-		MessageBox(NULL, TEXT("Couldn't allocate buffer!"),
-			   TEXT(EXTIO_RTL_NAME), MB_OK | MB_ICONERROR);
+		EXTIO_RTL_ERROR("Couldn't allocate buffer!");
 		return -1;
 	}
 
@@ -721,8 +723,7 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 				RtlSdrDev = NULL;
 				if (rtlsdr_open(&RtlSdrDev, (uint32_t)ComboBox_GetCurSel
 						(GET_WM_COMMAND_HWND(wParam, lParam))) < 0) {
-					MessageBox(NULL, TEXT("Couldn't open device!"),
-						   TEXT(EXTIO_RTL_NAME), MB_OK | MB_ICONERROR);
+					EXTIO_RTL_ERROR("Couldn't open device!");
 					return TRUE;
 				}
 				rtlsdr_set_sample_rate(RtlSdrDev, currsrate);

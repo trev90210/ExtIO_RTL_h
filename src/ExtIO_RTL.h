@@ -10,6 +10,8 @@
 
 #define EXTIO_RTL_MAXN		16
 #define EXTIO_RTL_NAME		"ExtIO RTL-SDR"
+#define EXTIO_RTL_ERROR(str)	MessageBox(NULL, TEXT(str), TEXT(EXTIO_RTL_NAME), \
+					   MB_OK | MB_ICONERROR)
 
 /* RTLSDR */
 #define RTLSDR_MINPPM		(-999)
