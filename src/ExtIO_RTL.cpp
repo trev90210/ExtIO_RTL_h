@@ -55,13 +55,6 @@ static int ExtIODirSampling = 0;    // id: 07 default: Disabled
 static uint32_t ExtIODevIdx = 0;    // id: 08 default: 0
 
 // Device
-typedef struct {
-	char vendor[256];
-	char product[256];
-	char serial[256];
-} extio_devid;
-
-static extio_devid *RtlSdrDevArr;
 static rtlsdr_dev_t *RtlSdrDev;
 static uint32_t RtlSdrDevCount;
 
@@ -90,14 +83,6 @@ extern "C" bool __stdcall InitHW(char *name, char *model, int &hwtype)
 	if (!RtlSdrDevCount)
 		goto fail;
 
-	RtlSdrDevArr = new(std::nothrow) extio_devid[RtlSdrDevCount];
-	if (!RtlSdrDevArr)
-		goto fail;
-
-	for (int i = 0; i < RtlSdrDevCount; i++)
-		rtlsdr_get_device_usb_strings(0, RtlSdrDevArr[i].vendor,
-						 RtlSdrDevArr[i].product,
-						 RtlSdrDevArr[i].serial);
 	strcpy_s(name, 16, EXTIO_RTL_NAME);
 	strcpy_s(model, 16, "USB");
 	hwtype = EXTIO_USBDATA_16;
@@ -531,10 +516,8 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 		for (uint32_t i = 0; i < RtlSdrDevCount; i++) {
 			TCHAR devid[256];
 
-			_stprintf_s(devid, 256, TEXT("(%d) - %S %S %S"), i + 1,
-				    RtlSdrDevArr[i].product,
-				    RtlSdrDevArr[i].vendor,
-				    RtlSdrDevArr[i].serial);
+			_stprintf_s(devid, 256, TEXT("%d: %S"), i,
+				    rtlsdr_get_device_name(i));
 			ComboBox_AddString(GetDlgItem(hwndDlg, IDC_RTL_DEVICE), devid);
 		}
 		ComboBox_SetCurSel(GetDlgItem(hwndDlg, IDC_RTL_DEVICE), ExtIODevIdx);
