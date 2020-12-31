@@ -555,7 +555,7 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 			for (int i = 0; i < (sizeof(buffer_sizes) / sizeof(buffer_sizes[0])); i++) {
 				TCHAR str[255];
 
-				_stprintf_s(str, 255, TEXT("%d kB"), buffer_sizes[i]);
+				_stprintf_s(str, 255, TEXT("%d "), buffer_sizes[i]);
 				ComboBox_AddString(GetDlgItem(hwndDlg, IDC_BUFFER), str);
 			}
 			ComboBox_SetCurSel(GetDlgItem(hwndDlg, IDC_BUFFER), buffer_default);
