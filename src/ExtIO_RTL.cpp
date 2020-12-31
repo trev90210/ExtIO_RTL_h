@@ -519,7 +519,7 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 
 			SendMessage(GetDlgItem(hwndDlg, IDC_PPM_S),
 					UDM_SETRANGE, (WPARAM)TRUE,
-					(LPARAM)MAX_PPM | (MIN_PPM << 16));
+					MAKELPARAM(MAX_PPM, MIN_PPM));
 
 			_stprintf_s(tempStr, 255, TEXT("%d"), ppm_default);
 			Edit_SetText(GetDlgItem(hwndDlg, IDC_PPM), tempStr);
