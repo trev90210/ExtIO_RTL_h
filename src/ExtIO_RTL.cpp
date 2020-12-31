@@ -65,6 +65,9 @@ static int ExtIOOffsetTuning = 1;   // id: 06 default: Enabled
 static int ExtIODirSampling = 0;    // id: 07 default: Disabled
 static uint32_t ExtIODevIdx = 0;    // id: 08 default: 0
 
+static int ExtIOInitialized;
+static int ExtIODataU8;
+
 // Device
 static rtlsdr_dev_t *RtlSdrDev;
 static uint32_t RtlSdrDevCount;
@@ -88,6 +91,13 @@ static void RtlSdrCallback(unsigned char *buf, uint32_t len, void * /* ctx */); 
 
 static void (*ExtIOCallback)(int, int, float, void *); // ExtIO Callback
 
+extern "C" void __stdcall ExtIoSDRInfo(int SDRInfo, int /* additionalValue */,
+				       void * /* additionalPtr */)
+{
+	if (!ExtIOInitialized && SDRInfo == EXTIO_SUPPORTS_U8)
+		ExtIODataU8 = 1;
+}
+
 extern "C" bool __stdcall InitHW(char *name, char *model, int &hwtype)
 {
 	RtlSdrDevCount = rtlsdr_get_device_count();
@@ -100,7 +110,11 @@ extern "C" bool __stdcall InitHW(char *name, char *model, int &hwtype)
 
 	strcpy_s(name, 16, EXTIO_RTL_NAME);
 	strcpy_s(model, 16, "USB");
-	hwtype = EXTIO_USBDATA_16;
+	if (!ExtIODataU8)
+		hwtype = EXTIO_USBDATA_16;
+	else
+		hwtype = EXTIO_USBDATA_U8;
+	ExtIOInitialized = 1;
 	return TRUE;
 }
 
@@ -178,15 +192,19 @@ extern "C" int __stdcall StartHW64(int64_t LOfreq)
 	if (!RtlSdrDev)
 		return -1;
 
-	RtlSdrBufShort = new(std::nothrow) short[RtlSdrBufSize];
-	if (!RtlSdrBufShort) {
-		EXTIO_RTL_ERROR("Couldn't allocate buffer!");
-		return -1;
+	if (!ExtIODataU8) {
+		RtlSdrBufShort = new(std::nothrow) short[RtlSdrBufSize];
+		if (!RtlSdrBufShort) {
+			EXTIO_RTL_ERROR("Couldn't allocate buffer!");
+			return -1;
+		}
 	}
 
 	if (RtlSdrThreadStart() < 0) {
-		delete[] RtlSdrBufShort;
-		RtlSdrBufShort = NULL;
+		if (!ExtIODataU8) {
+			delete[] RtlSdrBufShort;
+			RtlSdrBufShort = NULL;
+		}
 		return -1;
 	}
 
@@ -403,8 +421,10 @@ extern "C" void __stdcall ExtIoSetSetting(int idx, const char *value)
 extern "C" void __stdcall StopHW(void)
 {
 	RtlSdrThreadStop();
-	delete[] RtlSdrBufShort;
-	RtlSdrBufShort = NULL;
+	if (!ExtIODataU8) {
+		delete[] RtlSdrBufShort;
+		RtlSdrBufShort = NULL;
+	}
 	EnableWindow(GetDlgItem(h_dialog, IDC_RTL_BUFFER), TRUE);
 	EnableWindow(GetDlgItem(h_dialog, IDC_RTL_DEVICE), TRUE);
 }
@@ -443,7 +463,7 @@ extern "C" void __stdcall SetCallback(void (*ParentCallback)(int, int, float, vo
 
 static void RtlSdrCallback(unsigned char *buf, uint32_t len, void * /* ctx */)
 {
-	if (RtlSdrBufShort && buf && len == RtlSdrBufSize) {
+	if (!ExtIODataU8 && RtlSdrBufShort && buf && len == RtlSdrBufSize) {
 		short *short_buf = RtlSdrBufShort;
 		unsigned char *char_buf = buf;
 
@@ -451,6 +471,8 @@ static void RtlSdrCallback(unsigned char *buf, uint32_t len, void * /* ctx */)
 			*short_buf++ = ((short)(*char_buf++)) - 128;
 
 		ExtIOCallback(RtlSdrBufSize, 0, 0, (void *)RtlSdrBufShort);
+	} else if (ExtIODataU8 && buf && len == RtlSdrBufSize) {
+		ExtIOCallback(RtlSdrBufSize, 0, 0, (void *)buf);
 	}
 }
 

@@ -24,6 +24,10 @@
 
 /* ExtIO HW Type Codes */
 #define EXTIO_USBDATA_16	3
+#define EXTIO_USBDATA_U8	9
+
+/* ExtIO SDR Info Codes */
+#define EXTIO_SUPPORTS_U8	7
 
 /* ExtIO Status Codes */
 #define EXTIO_CHANGED_SR	100
@@ -39,6 +43,7 @@ extern "C" void __stdcall CloseHW(void);
 extern "C" int __stdcall ExtIoGetActualSrateIdx(void);
 extern "C" int __stdcall ExtIoGetSetting(int idx, char *description, char *value);
 extern "C" int __stdcall ExtIoGetSrates(int idx, double *samplerate);
+extern "C" void __stdcall ExtIoSDRInfo(int SDRInfo, int /* additionalValue */, void * /* additionalPtr */);
 extern "C" void __stdcall ExtIoSetSetting(int idx, const char *value);
 extern "C" int __stdcall ExtIoSetSrate(int idx);
 extern "C" int __stdcall GetActualAttIdx(void);

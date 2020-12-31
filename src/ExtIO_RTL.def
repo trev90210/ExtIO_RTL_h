@@ -5,6 +5,7 @@ CloseHW
 ExtIoGetActualSrateIdx
 ExtIoGetSetting
 ExtIoGetSrates
+ExtIoSDRInfo
 ExtIoSetSetting
 ExtIoSetSrate
 GetActualAttIdx
