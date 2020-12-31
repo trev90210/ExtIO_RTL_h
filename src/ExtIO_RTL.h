@@ -3,11 +3,15 @@
 #ifndef EXTIO_RTL_H
 #define EXTIO_RTL_H
 
+#include <stdint.h>
+
 #define EXTIO_RTL_NAME		"ExtIO RTL-SDR"
 
 /* RTLSDR */
 #define RTLSDR_MINPPM		(-999)
 #define RTLSDR_MAXPPM		999
+#define RTLSDR_MINLOSRATE	225001
+#define RTLSDR_MAXLOSRATE	300000
 #define RTLSDR_MINHISRATE	900001
 #define RTLSDR_MAXHISRATE	3200000
 
@@ -45,5 +49,16 @@ extern "C" int __stdcall StartHW64(int64_t LOfreq);
 extern "C" int __stdcall StartHW(long LOfreq);
 extern "C" void __stdcall StopHW(void);
 extern "C" void __stdcall SwitchGUI(void);
+
+static inline uint32_t srate_validate(uint32_t srate)
+{
+	if (srate < RTLSDR_MINLOSRATE)
+		return RTLSDR_MINLOSRATE;
+	if (srate > RTLSDR_MAXLOSRATE && srate < RTLSDR_MINHISRATE)
+		return RTLSDR_MINHISRATE;
+	if (srate > RTLSDR_MAXHISRATE)
+		return RTLSDR_MAXHISRATE;
+	return srate;
+}
 
 #endif /* EXTIO_RTL_H */

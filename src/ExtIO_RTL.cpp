@@ -21,20 +21,21 @@ static HWND h_dialog;
 static INT_PTR CALLBACK MainDlgProc(HWND, UINT, WPARAM, LPARAM);
 
 typedef struct {
-	const double value;
+	const uint32_t value;
 	const TCHAR *name;
 } RtlSdrSampleRate;
 
 static RtlSdrSampleRate RtlSdrSampleRateArr[] = {
-	{  250000.0, TEXT("0.25 Msps") },
-	{  960000.0, TEXT("0.96 Msps") },
-	{ 1028571.0, TEXT("1.02 Msps") },
-	{ 1200000.0, TEXT("1.2 Msps")  },
-	{ 1440000.0, TEXT("1.44 Msps") },
-	{ 1800000.0, TEXT("1.8 Msps")  },
-	{ 2400000.0, TEXT("2.4 Msps")  },
-	{ 2880000.0, TEXT("2.88 Msps") },
-	{ 3200000.0, TEXT("3.2 Msps")  }
+	{ 3200000, TEXT("3200000") },
+	{ 2880000, TEXT("2880000") },
+	{ 2560000, TEXT("2560000") },
+	{ 2400000, TEXT("2400000") },
+	{ 1800000, TEXT("1800000") },
+	{ 1440000, TEXT("1440000") },
+	{ 1280000, TEXT("1280000") },
+	{ 1024000, TEXT("1024000") },
+	{  960000, TEXT("960000")  },
+	{  250000, TEXT("250000")  }
 };
 
 static const TCHAR *RtlSdrDirSamplingArr[] = {
@@ -44,7 +45,7 @@ static const TCHAR *RtlSdrDirSamplingArr[] = {
 };
 
 // ExtIO Options
-static int ExtIOSampleRate = 6;     // id: 00 default: 2.4 Msps
+static int ExtIOSampleRate = 3;     // id: 00 default: 2.4 Msps
 static int ExtIOTunerAGC = 1;       // id: 01 default: Enabled
 static int ExtIORTLAGC = 0;         // id: 02 default: Disabled
 static int ExtIOFreqCorrection = 0; // id: 03 default: 0
@@ -108,7 +109,8 @@ extern "C" bool __stdcall OpenHW(void)
 	ret = rtlsdr_open(&RtlSdrDev, ExtIODevIdx);
 	if (ret < 0)
 		return FALSE;
-	ret = rtlsdr_set_sample_rate(RtlSdrDev, (uint32_t)RtlSdrSampleRateArr[ExtIOSampleRate].value);
+	ret = rtlsdr_set_sample_rate(RtlSdrDev,
+				     RtlSdrSampleRateArr[ExtIOSampleRate].value);
 	if (ret < 0)
 		return FALSE;
 
@@ -216,7 +218,7 @@ extern "C" int __stdcall ExtIoGetSrates(int idx, double *samplerate)
 	if (idx < 0 || idx >= (sizeof(RtlSdrSampleRateArr) / sizeof(RtlSdrSampleRateArr[0])))
 		return -1;
 
-	*samplerate = RtlSdrSampleRateArr[idx].value;
+	*samplerate = (double)(RtlSdrSampleRateArr[idx].value * 1.0);
 	return 0;
 }
 
@@ -230,7 +232,7 @@ extern "C" int __stdcall ExtIoSetSrate(int idx)
 	if (idx < 0 || idx >= (sizeof(RtlSdrSampleRateArr) / sizeof(RtlSdrSampleRateArr[0])))
 		return -1;
 
-	rtlsdr_set_sample_rate(RtlSdrDev, (uint32_t)RtlSdrSampleRateArr[idx].value);
+	rtlsdr_set_sample_rate(RtlSdrDev, RtlSdrSampleRateArr[idx].value);
 	ComboBox_SetCurSel(GetDlgItem(h_dialog, IDC_RTL_SAMPLE_RATE), idx);
 	ExtIOCallback(-1, EXTIO_CHANGED_SR, 0, NULL);
 	return 0;
@@ -613,33 +615,19 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 		case IDC_RTL_SAMPLE_RATE:
 			if (GET_WM_COMMAND_CMD(wParam, lParam) == CBN_SELCHANGE) {
 				rtlsdr_set_sample_rate(RtlSdrDev,
-					(uint32_t)RtlSdrSampleRateArr[ComboBox_GetCurSel(GET_WM_COMMAND_HWND(wParam, lParam))].value);
+					RtlSdrSampleRateArr[ComboBox_GetCurSel
+					(GET_WM_COMMAND_HWND(wParam, lParam))].value);
 				ExtIOCallback(-1, EXTIO_CHANGED_SR, 0, NULL);
 			}
 			if (GET_WM_COMMAND_CMD(wParam, lParam) == CBN_EDITUPDATE) {
-				double coeff;
 				uint32_t newsrate;
-				int exp = 1;
 				TCHAR srate[256];
-				TCHAR *endptr;
 
 				ComboBox_GetText((HWND)lParam, srate, 256);
-				coeff = _tcstod(srate, &endptr);
-				while (_istspace(*endptr))
-					++endptr;
-
-				switch (_totupper(*endptr)) {
-				case 'K':
-					exp = 1024;
-					break;
-				case 'M':
-					exp = 1024 * 1024;
-					break;
-				}
-
-				newsrate = (uint32_t)(coeff * exp);
-				if (newsrate >= RTLSDR_MINHISRATE && newsrate <= RTLSDR_MAXHISRATE) {
-					rtlsdr_set_sample_rate(RtlSdrDev, newsrate);
+				newsrate = srate_validate(_ttoi(srate));
+				if (!rtlsdr_set_sample_rate(RtlSdrDev, newsrate)) {
+					_itot(newsrate, srate, 10);
+					ComboBox_SetText((HWND)lParam, srate);
 					ExtIOCallback(-1, EXTIO_CHANGED_SR, 0, NULL);
 				}
 			}
