@@ -299,11 +299,13 @@ extern "C" int __stdcall ExtIoGetSetting(int idx, char *description, char *value
 			  BST_CHECKED ? 1 : 0);
 		return 0;
 	case 3: {
+		int oldppm;
 		TCHAR ppm[256];
 
-		_snprintf(description, 1024, "%s", "FreqCorrection");
 		Edit_GetText(GetDlgItem(h_dialog, IDC_RTL_PPM), ppm, 256);
-		_snprintf(value, 1024, "%d", _ttoi(ppm));
+		oldppm = ppm_validate(_ttoi(ppm));
+		_snprintf(description, 1024, "%s", "FreqCorrection");
+		_snprintf(value, 1024, "%d", oldppm);
 		return 0;
 	}
 	case 4: {
@@ -358,9 +360,8 @@ extern "C" void __stdcall ExtIoSetSetting(int idx, const char *value)
 		ExtIORTLAGC = ExtIOVal ? 1 : 0;
 		break;
 	case 3:
-		ExtIOVal = atoi(value);
-		if (ExtIOVal > RTLSDR_MINPPM && ExtIOVal < RTLSDR_MAXPPM)
-			ExtIOFreqCorrection = ExtIOVal;
+		ExtIOVal = ppm_validate(atoi(value));
+		ExtIOFreqCorrection = ExtIOVal;
 		break;
 	case 4:
 		ExtIOVal = atoi(value);
@@ -510,7 +511,9 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 		SendMessage(GetDlgItem(hwndDlg, IDC_RTL_PPM_CTL),
 			    UDM_SETRANGE, (WPARAM)TRUE,
 			    MAKELPARAM(RTLSDR_MAXPPM, RTLSDR_MINPPM));
-
+		SendMessage(GetDlgItem(hwndDlg, IDC_RTL_PPM),
+			    EM_SETLIMITTEXT, (WPARAM)4, (LPARAM)0);
+		ExtIOFreqCorrection = ppm_validate(ExtIOFreqCorrection);
 		_stprintf_s(ppm, 256, TEXT("%d"), ExtIOFreqCorrection);
 		Edit_SetText(GetDlgItem(hwndDlg, IDC_RTL_PPM), ppm);
 		rtlsdr_set_freq_correction(RtlSdrDev, ExtIOFreqCorrection);
@@ -570,10 +573,12 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 		switch (GET_WM_COMMAND_ID(wParam, lParam)) {
 		case IDC_RTL_PPM:
 			if (GET_WM_COMMAND_CMD(wParam, lParam) == EN_CHANGE) {
+				int newppm;
 				TCHAR ppm[256];
 
 				Edit_GetText((HWND)lParam, ppm, 256);
-				if (!rtlsdr_set_freq_correction(RtlSdrDev, _ttoi(ppm)))
+				newppm = ppm_validate(_ttoi(ppm));
+				if (!rtlsdr_set_freq_correction(RtlSdrDev, newppm))
 					ExtIOCallback(-1, EXTIO_CHANGED_LO, 0, NULL);
 			}
 			return TRUE;

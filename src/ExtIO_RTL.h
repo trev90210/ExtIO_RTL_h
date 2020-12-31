@@ -50,6 +50,15 @@ extern "C" int __stdcall StartHW(long LOfreq);
 extern "C" void __stdcall StopHW(void);
 extern "C" void __stdcall SwitchGUI(void);
 
+static inline int32_t ppm_validate(int32_t ppm)
+{
+	if (ppm < RTLSDR_MINPPM)
+		return RTLSDR_MINPPM;
+	if (ppm > RTLSDR_MAXPPM)
+		return RTLSDR_MAXPPM;
+	return ppm;
+}
+
 static inline uint32_t srate_validate(uint32_t srate)
 {
 	if (srate < RTLSDR_MINLOSRATE)
