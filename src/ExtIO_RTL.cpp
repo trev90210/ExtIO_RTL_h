@@ -17,12 +17,6 @@
 #include "ExtIO_RTL.h"
 #include "resource.h"
 
-#define EXTIO_HWTYPE_16B	3
-#define MIN_PPM			(-1000)
-#define MAX_PPM			1000
-#define MINRATE			900001
-#define MAXRATE			3200000
-
 typedef struct sr {
 	double value;
 	TCHAR *name;
@@ -96,9 +90,6 @@ short *short_buf = NULL;
 
 /* ExtIO Callback */
 void (*WinradCallBack)(int, int, float, void *) = NULL;
-#define WINRAD_SRCHANGE		100
-#define WINRAD_LOCHANGE		101
-#define WINRAD_ATTCHANGE	125
 
 static INT_PTR CALLBACK MainDlgProc(HWND, UINT, WPARAM, LPARAM);
 HWND h_dialog = NULL;
