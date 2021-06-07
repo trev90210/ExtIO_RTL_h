@@ -9,11 +9,11 @@
 # The directory tree should look like this:
 # .
 # ├── librtlsdr
-# └── ExIO_RTL
+# └── ExtIO_RTL
 #     └── Makefile.mingw64 (This file)
 #
 # Compile ExtIO_RTL.dll:
-# $ cd ExIO_RTL
+# $ cd ExtIO_RTL
 # $ make -f Makefile.mingw64
 #
 # The resulting ExtIO_RTL.dll depends on rtlsdr.dll in the search path.
