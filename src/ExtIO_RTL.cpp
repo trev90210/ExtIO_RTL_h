@@ -41,7 +41,9 @@ static RtlSdrSampleRate RtlSdrSampleRateArr[] = {
 static const TCHAR *RtlSdrDirSamplingArr[] = {
 	TEXT("Disabled"),
 	TEXT("I input"),
-	TEXT("Q input")
+	TEXT("Q input"),
+	TEXT("I auto"),
+	TEXT("Q auto")
 };
 
 static const TCHAR *RtlSdrTunerArr[] = {
@@ -67,6 +69,25 @@ static uint32_t ExtIODevIdx = 0;    // id: 08 default: 0
 
 static int ExtIOInitialized;
 static int ExtIODataU8;
+
+// Branch auto switch settings
+typedef struct {
+	int64_t freqswitch;
+	int dirsampling;
+	int dirsamplingzone;
+	int offsettuning;
+	int tunergain;
+	int tuneragc;
+} RtlSdrAutoBranch;
+
+static RtlSdrAutoBranch ExtIOAutoBranch = {
+	14400000, // 14.4 MHz
+	ExtIODirSampling,
+	0,
+	ExtIOOffsetTuning,
+	ExtIOTunerGain,
+	ExtIOTunerAGC,
+};
 
 // Device
 static rtlsdr_dev_t *RtlSdrDev;
@@ -149,17 +170,43 @@ fail:
 
 extern "C" int64_t __stdcall SetHWLO64(int64_t LOfreq)
 {
+	static int dirsampling = 0;
+	static int dirsamplingzone = 0;
 	int ExtIOPllLocked = 1;
 	int64_t ret = 0;
 
-	if ((LOfreq < 1) || (LOfreq > (int64_t)0xffffffff)) {
+	if ((LOfreq < 1) || (LOfreq > (int64_t)0xffffffff))
 		ret = -1;
-	} else {
-		ExtIOPllLocked = rtlsdr_set_center_freq(RtlSdrDev,
-					     (uint32_t)(LOfreq & 0xffffffff));
-		if (ExtIOPllLocked)
-			ret = -1;
+
+	if (LOfreq >= ExtIOAutoBranch.freqswitch)
+		ExtIOAutoBranch.dirsamplingzone = 0;
+	else
+		ExtIOAutoBranch.dirsamplingzone = 1;
+
+	if ((dirsampling != ExtIOAutoBranch.dirsampling) ||
+	   ((ExtIOAutoBranch.dirsampling > 2) &&
+	    (dirsamplingzone != ExtIOAutoBranch.dirsamplingzone))) {
+		dirsampling = ExtIOAutoBranch.dirsampling;
+		dirsamplingzone = ExtIOAutoBranch.dirsamplingzone;
+
+		if ((dirsampling > 2) && dirsamplingzone)
+			rtlsdr_set_direct_sampling(RtlSdrDev, dirsampling >> 1);
+		else if ((dirsampling > 2) && !dirsamplingzone)
+			rtlsdr_set_direct_sampling(RtlSdrDev, 0);
+		else
+			rtlsdr_set_direct_sampling(RtlSdrDev, dirsampling);
+
+		if (!dirsampling || ((dirsampling > 2) && !dirsamplingzone)) {
+			rtlsdr_set_offset_tuning(RtlSdrDev, ExtIOAutoBranch.offsettuning);
+			rtlsdr_set_tuner_gain_mode(RtlSdrDev, ExtIOAutoBranch.tuneragc);
+			rtlsdr_set_tuner_gain(RtlSdrDev, ExtIOAutoBranch.tunergain);
+		}
 	}
+
+	ExtIOPllLocked = rtlsdr_set_center_freq(RtlSdrDev,
+				     (uint32_t)(LOfreq & 0xffffffff));
+	if (ExtIOPllLocked)
+		ret = -1;
 
 	if (ExtIOPllLocked != RtlSdrPllLocked) {
 		RtlSdrPllLocked = ExtIOPllLocked;
@@ -225,6 +272,10 @@ extern "C" int64_t __stdcall GetHWLO64(void)
 	static int64_t LastLOfreq = 100000000;
 
 	LOfreq = (int64_t)rtlsdr_get_center_freq(RtlSdrDev);
+	if ((ExtIOAutoBranch.dirsampling > 2) &&
+	    !ExtIOAutoBranch.dirsamplingzone && !LOfreq &&
+	    (LastLOfreq < ExtIOAutoBranch.freqswitch))
+		LOfreq = ExtIOAutoBranch.freqswitch;
 	if (!LOfreq)
 		return LastLOfreq;
 	LastLOfreq = LOfreq;
@@ -301,8 +352,10 @@ extern "C" int __stdcall SetAttenuator(int idx)
 
 		_stprintf_s(tunergain, 256, TEXT("%2.1f dB"), (float)(pos / 10.0));
 		Static_SetText(GetDlgItem(h_dialog, IDC_TUNER_GAIN), tunergain);
-		if (pos != RtlSdrTunerGain)
+		if (pos != RtlSdrTunerGain) {
 			rtlsdr_set_tuner_gain(RtlSdrDev, pos);
+			ExtIOAutoBranch.tunergain = pos;
+		}
 	}
 	RtlSdrTunerGain = pos;
 	return 0;
@@ -561,11 +614,18 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 
 		ComboBox_SetCurSel(GetDlgItem(hwndDlg, IDC_RTL_DIR_SAMPLING),
 				   ExtIODirSampling);
-		rtlsdr_set_direct_sampling(RtlSdrDev, ExtIODirSampling);
+		if ((ExtIODirSampling > 2) && ExtIOAutoBranch.dirsamplingzone)
+			rtlsdr_set_direct_sampling(RtlSdrDev, ExtIODirSampling >> 1);
+		else if ((ExtIODirSampling > 2) && !ExtIOAutoBranch.dirsamplingzone)
+			rtlsdr_set_direct_sampling(RtlSdrDev, 0);
+		else
+			rtlsdr_set_direct_sampling(RtlSdrDev, ExtIODirSampling);
+		ExtIOAutoBranch.dirsampling = ExtIODirSampling;
 
 		Button_SetCheck(GetDlgItem(hwndDlg, IDC_TUNER_AGC),
 				ExtIOTunerAGC ? BST_CHECKED : BST_UNCHECKED);
 		rtlsdr_set_tuner_gain_mode(RtlSdrDev, ExtIOTunerAGC ? 0 : 1);
+		ExtIOAutoBranch.tuneragc = ExtIOTunerAGC ? 0 : 1;
 
 		Button_SetCheck(GetDlgItem(hwndDlg, IDC_RTL_AGC),
 				ExtIORTLAGC ? BST_CHECKED : BST_UNCHECKED);
@@ -574,6 +634,7 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 		Button_SetCheck(GetDlgItem(hwndDlg, IDC_TUNER_OFF_TUNING),
 				ExtIOOffsetTuning ? BST_CHECKED : BST_UNCHECKED);
 		rtlsdr_set_offset_tuning(RtlSdrDev, ExtIOOffsetTuning ? 1 : 0);
+		ExtIOAutoBranch.offsettuning = ExtIOOffsetTuning ? 1 : 0;
 
 		/* Bias Tee disabled by default */
 		Button_SetCheck(GetDlgItem(hwndDlg, IDC_RTL_BIAS_TEE), BST_UNCHECKED);
@@ -628,6 +689,7 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 			_stprintf_s(tunergain, 256, TEXT("%2.1f dB"), (float)(pos / 10.0));
 			Static_SetText(GetDlgItem(hwndDlg, IDC_TUNER_GAIN), tunergain);
 			rtlsdr_set_tuner_gain(RtlSdrDev, pos);
+			ExtIOAutoBranch.tunergain = pos;
 		}
 		return TRUE;
 	}
@@ -653,15 +715,19 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 			return TRUE;
 		case IDC_TUNER_OFF_TUNING:
 			if (Button_GetCheck
-				(GET_WM_COMMAND_HWND(wParam, lParam)) == BST_CHECKED)
+				(GET_WM_COMMAND_HWND(wParam, lParam)) == BST_CHECKED) {
 				rtlsdr_set_offset_tuning(RtlSdrDev, 1);
-			else
+				ExtIOAutoBranch.offsettuning = 1;
+			} else {
 				rtlsdr_set_offset_tuning(RtlSdrDev, 0);
+				ExtIOAutoBranch.offsettuning = 0;
+			}
 			return TRUE;
 		case IDC_TUNER_AGC:
 			if (Button_GetCheck
 				(GET_WM_COMMAND_HWND(wParam, lParam)) == BST_CHECKED) {
 				rtlsdr_set_tuner_gain_mode(RtlSdrDev, 0);
+				ExtIOAutoBranch.tuneragc = 0;
 				EnableWindow(hGain, FALSE);
 				Static_SetText(GetDlgItem
 					      (hwndDlg, IDC_TUNER_GAIN), TEXT("AGC"));
@@ -671,12 +737,14 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 				TCHAR tunergain[256];
 
 				rtlsdr_set_tuner_gain_mode(RtlSdrDev, 1);
+				ExtIOAutoBranch.tuneragc = 1;
 				EnableWindow(hGain, TRUE);
 				_stprintf_s(tunergain, 256, TEXT("%2.1f dB"),
 					   (float)(pos / 10.0));
 				Static_SetText(GetDlgItem
 					      (hwndDlg, IDC_TUNER_GAIN), tunergain);
 				rtlsdr_set_tuner_gain(RtlSdrDev, pos);
+				ExtIOAutoBranch.tunergain = pos;
 			}
 			return TRUE;
 		case IDC_RTL_SAMPLE_RATE:
@@ -708,24 +776,39 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 			return TRUE;
 		case IDC_RTL_DIR_SAMPLING:
 			if (GET_WM_COMMAND_CMD(wParam, lParam) == CBN_SELCHANGE) {
-				rtlsdr_set_direct_sampling(RtlSdrDev,
-				    ComboBox_GetCurSel(GET_WM_COMMAND_HWND(wParam, lParam)));
-				if (ComboBox_GetCurSel(GET_WM_COMMAND_HWND(wParam, lParam)) == 0) {
+				int dirsampling = ComboBox_GetCurSel(GET_WM_COMMAND_HWND(wParam, lParam));
+
+				if ((dirsampling > 2) && ExtIOAutoBranch.dirsamplingzone)
+					rtlsdr_set_direct_sampling(RtlSdrDev, dirsampling >> 1);
+				else if ((dirsampling > 2) && !ExtIOAutoBranch.dirsamplingzone)
+					rtlsdr_set_direct_sampling(RtlSdrDev, 0);
+				else
+					rtlsdr_set_direct_sampling(RtlSdrDev, dirsampling);
+				ExtIOAutoBranch.dirsampling = dirsampling;
+
+				if (!dirsampling || ((dirsampling > 2) &&
+				    !ExtIOAutoBranch.dirsamplingzone)) {
 					if (Button_GetCheck(GetDlgItem
-						(hwndDlg, IDC_TUNER_OFF_TUNING)) == BST_CHECKED)
+						(hwndDlg, IDC_TUNER_OFF_TUNING)) == BST_CHECKED) {
 						rtlsdr_set_offset_tuning(RtlSdrDev, 1);
-					else
+						ExtIOAutoBranch.offsettuning = 1;
+					} else {
 						rtlsdr_set_offset_tuning(RtlSdrDev, 0);
+						ExtIOAutoBranch.offsettuning = 0;
+					}
 
 					if (Button_GetCheck(GetDlgItem
 						(hwndDlg, IDC_TUNER_AGC)) == BST_CHECKED) {
 						rtlsdr_set_tuner_gain_mode(RtlSdrDev, 0);
+						ExtIOAutoBranch.tuneragc = 0;
 					} else {
 						int pos = (int)-SendMessage(hGain,
 								TBM_GETPOS, (WPARAM)0, (LPARAM)0);
 
 						rtlsdr_set_tuner_gain_mode(RtlSdrDev, 1);
 						rtlsdr_set_tuner_gain(RtlSdrDev, pos);
+						ExtIOAutoBranch.tuneragc = 1;
+						ExtIOAutoBranch.tunergain = pos;
 					}
 				}
 				EXTIO_SET_STATUS(ExtIOCallback, EXTIO_CHANGED_LO);
@@ -734,6 +817,7 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 		case IDC_RTL_DEVICE:
 			if (GET_WM_COMMAND_CMD(wParam, lParam) == CBN_SELCHANGE) {
 				int currppm;
+				int dirsampling;
 				uint32_t currsrate;
 				TCHAR ppm[256];
 				TCHAR srate[256];
@@ -754,15 +838,27 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 				}
 				rtlsdr_set_sample_rate(RtlSdrDev, currsrate);
 				rtlsdr_set_freq_correction(RtlSdrDev, currppm);
-				rtlsdr_set_direct_sampling(RtlSdrDev, ComboBox_GetCurSel
-					(GetDlgItem(hwndDlg, IDC_RTL_DIR_SAMPLING)));
+
+				dirsampling = ComboBox_GetCurSel(GetDlgItem(hwndDlg, IDC_RTL_DIR_SAMPLING));
+
+				if ((dirsampling > 2) && ExtIOAutoBranch.dirsamplingzone)
+					rtlsdr_set_direct_sampling(RtlSdrDev, dirsampling >> 1);
+				else if ((dirsampling > 2) && !ExtIOAutoBranch.dirsamplingzone)
+					rtlsdr_set_direct_sampling(RtlSdrDev, 0);
+				else
+					rtlsdr_set_direct_sampling(RtlSdrDev, dirsampling);
+				ExtIOAutoBranch.dirsampling = dirsampling;
+
 				EXTIO_SET_STATUS(ExtIOCallback, EXTIO_CHANGED_SR);
 
 				if (Button_GetCheck(GetDlgItem
-					(hwndDlg, IDC_TUNER_AGC)) == BST_CHECKED)
+					(hwndDlg, IDC_TUNER_AGC)) == BST_CHECKED) {
 					rtlsdr_set_tuner_gain_mode(RtlSdrDev, 0);
-				else
+					ExtIOAutoBranch.tuneragc = 0;
+				} else {
 					rtlsdr_set_tuner_gain_mode(RtlSdrDev, 1);
+					ExtIOAutoBranch.tuneragc = 1;
+				}
 
 				if (Button_GetCheck(GetDlgItem
 					(hwndDlg, IDC_RTL_AGC)) == BST_CHECKED)
@@ -771,10 +867,13 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 					rtlsdr_set_agc_mode(RtlSdrDev, 0);
 
 				if (Button_GetCheck(GetDlgItem
-					(hwndDlg, IDC_TUNER_OFF_TUNING)) == BST_CHECKED)
+					(hwndDlg, IDC_TUNER_OFF_TUNING)) == BST_CHECKED) {
 					rtlsdr_set_offset_tuning(RtlSdrDev, 1);
-				else
+					ExtIOAutoBranch.offsettuning = 1;
+				} else {
 					rtlsdr_set_offset_tuning(RtlSdrDev, 0);
+					ExtIOAutoBranch.offsettuning = 0;
+				}
 
 				/* Bias Tee disabled by default */
 				Button_SetCheck(GetDlgItem
@@ -798,6 +897,7 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 					Static_SetText(GetDlgItem
 						      (hwndDlg, IDC_TUNER_GAIN), tunergain);
 					rtlsdr_set_tuner_gain(RtlSdrDev, pos);
+					ExtIOAutoBranch.tunergain = pos;
 				}
 			}
 			return TRUE;
@@ -836,6 +936,7 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 			if (pos != RtlSdrTunerGain) {
 				RtlSdrTunerGain = pos;
 				rtlsdr_set_tuner_gain(RtlSdrDev, pos);
+				ExtIOAutoBranch.tunergain = pos;
 				EXTIO_SET_STATUS(ExtIOCallback, EXTIO_CHANGED_ATT);
 			}
 			return TRUE;
