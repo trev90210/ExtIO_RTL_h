@@ -711,10 +711,6 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 				ExtIOOffsetTuning ? BST_CHECKED : BST_UNCHECKED);
 		rtlsdr_set_offset_tuning(RtlSdrDev, ExtIOOffsetTuning ? 1 : 0);
 
-#ifdef EXTIO_WITH_BIAS_TEE
-		Button_SetCheck(GetDlgItem(hwndDlg, IDC_RTL_BIAS_TEE), BST_UNCHECKED);
-#endif
-
 		SendMessage(GetDlgItem(hwndDlg, IDC_RTL_PPM_CTL),
 			    UDM_SETRANGE, (WPARAM)TRUE,
 			    MAKELPARAM(RTLSDR_MAXPPM, RTLSDR_MINPPM));
@@ -936,11 +932,6 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 				else
 					rtlsdr_set_offset_tuning(RtlSdrDev, 0);
 
-#ifdef EXTIO_WITH_BIAS_TEE
-				Button_SetCheck(GetDlgItem
-					       (hwndDlg, IDC_RTL_BIAS_TEE), BST_UNCHECKED);
-#endif
-
 				ExtIOTunerGainsConf(hwndDlg, hGain);
 				EXTIO_SET_STATUS(ExtIOCallback, EXTIO_CHANGED_RF_IF);
 
@@ -966,15 +957,6 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 				RtlSdrE4KIFGain = RtlSdrE4KIFGainArr[curr_e4k_ifgain];
 			}
 			return TRUE;
-#ifdef EXTIO_WITH_BIAS_TEE
-		case IDC_RTL_BIAS_TEE:
-			if (Button_GetCheck
-				(GET_WM_COMMAND_HWND(wParam, lParam)) == BST_CHECKED)
-				rtlsdr_set_bias_tee(RtlSdrDev, 1);
-			else
-				rtlsdr_set_bias_tee(RtlSdrDev, 0);
-			return TRUE;
-#endif
 		case IDC_E4K_IF_GAIN_MODE:
 			if (GET_WM_COMMAND_CMD(wParam, lParam) == CBN_SELCHANGE)
 				ExtIOSetE4KIFGain(hwndDlg, hE4KIFGain, 0,
