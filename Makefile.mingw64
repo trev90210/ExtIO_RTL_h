@@ -31,7 +31,6 @@ INCS      = -I"./src" -I"./res" -I"../librtlsdr/include"
 CXX       = $(PREFIX)g++
 CXXFLAGS  = $(INCS) -O2 -Wall -Wextra -m64 -shared -s
 CPPFLAGS  = -D_UNICODE -DUNICODE
-#CPPFLAGS += -DEXTIO_WITH_BIAS_TEE
 LDFLAGS   = -mwindows -static-libgcc -static-libstdc++    \
 	    -Wl,-Bstatic -lstdc++ -lpthread -Wl,-Bdynamic \
 	    -Wl,--enable-stdcall-fixup

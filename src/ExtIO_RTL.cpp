@@ -575,9 +575,9 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 				ExtIOOffsetTuning ? BST_CHECKED : BST_UNCHECKED);
 		rtlsdr_set_offset_tuning(RtlSdrDev, ExtIOOffsetTuning ? 1 : 0);
 
-#ifdef EXTIO_WITH_BIAS_TEE
+		/* Bias Tee disabled by default */
 		Button_SetCheck(GetDlgItem(hwndDlg, IDC_RTL_BIAS_TEE), BST_UNCHECKED);
-#endif
+		rtlsdr_set_bias_tee(RtlSdrDev, 0);
 
 		SendMessage(GetDlgItem(hwndDlg, IDC_RTL_PPM_CTL),
 			    UDM_SETRANGE, (WPARAM)TRUE,
@@ -776,10 +776,10 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 				else
 					rtlsdr_set_offset_tuning(RtlSdrDev, 0);
 
-#ifdef EXTIO_WITH_BIAS_TEE
+				/* Bias Tee disabled by default */
 				Button_SetCheck(GetDlgItem
 					       (hwndDlg, IDC_RTL_BIAS_TEE), BST_UNCHECKED);
-#endif
+				rtlsdr_set_bias_tee(RtlSdrDev, 0);
 
 				ExtIOTunerGainsConf(hwndDlg, hGain);
 				EXTIO_SET_STATUS(ExtIOCallback, EXTIO_CHANGED_RF_IF);
@@ -801,7 +801,6 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 				}
 			}
 			return TRUE;
-#ifdef EXTIO_WITH_BIAS_TEE
 		case IDC_RTL_BIAS_TEE:
 			if (Button_GetCheck
 				(GET_WM_COMMAND_HWND(wParam, lParam)) == BST_CHECKED)
@@ -809,7 +808,6 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 			else
 				rtlsdr_set_bias_tee(RtlSdrDev, 0);
 			return TRUE;
-#endif
 		}
 		break;
 	case WM_VSCROLL:
