@@ -67,8 +67,8 @@ static int ExtIOOffsetTuning = 1;   // id: 06 default: Enabled
 static int ExtIODirSampling = 0;    // id: 07 default: Disabled
 static uint32_t ExtIODevIdx = 0;    // id: 08 default: 0
 
-static int ExtIOInitialized;
-static int ExtIODataU8;
+static int ExtIOInitialized = 0;
+static int ExtIODataU8 = 0;
 
 // Branch auto switch settings
 typedef struct {
@@ -101,6 +101,7 @@ static int RtlSdrPllLocked; // 0 = Locked
 
 // Buffer
 static const uint32_t RtlSdrBufSizeArr[] = { 1, 2, 4, 8, 16, 32, 64, 128, 256 }; // In KiB
+static const uint32_t RtlSdrBufSizeMax = 256;
 static uint32_t RtlSdrBufSize;
 static short *RtlSdrBufShort;
 
@@ -132,10 +133,18 @@ extern "C" bool __stdcall InitHW(char *name, char *model, int &hwtype)
 	strcpy_s(name, 16, EXTIO_RTL_NAME);
 	strcpy_s(model, 16, "USB");
 	if (!ExtIODataU8)
+	{
 		hwtype = EXTIO_USBDATA_16;
+		RtlSdrBufShort = new(std::nothrow) short[RtlSdrBufSizeMax];
+		if (!RtlSdrBufShort) {
+			EXTIO_RTL_ERROR("Couldn't allocate buffer!");
+			return FALSE;
+		}
+	}
 	else
 		hwtype = EXTIO_USBDATA_U8;
 	ExtIOInitialized = 1;
+
 	return TRUE;
 }
 
@@ -239,19 +248,7 @@ extern "C" int __stdcall StartHW64(int64_t LOfreq)
 	if (!RtlSdrDev)
 		return -1;
 
-	if (!ExtIODataU8) {
-		RtlSdrBufShort = new(std::nothrow) short[RtlSdrBufSize];
-		if (!RtlSdrBufShort) {
-			EXTIO_RTL_ERROR("Couldn't allocate buffer!");
-			return -1;
-		}
-	}
-
 	if (RtlSdrThreadStart() < 0) {
-		if (!ExtIODataU8) {
-			delete[] RtlSdrBufShort;
-			RtlSdrBufShort = NULL;
-		}
 		return -1;
 	}
 
@@ -474,10 +471,6 @@ extern "C" void __stdcall ExtIoSetSetting(int idx, const char *value)
 extern "C" void __stdcall StopHW(void)
 {
 	RtlSdrThreadStop();
-	if (!ExtIODataU8) {
-		delete[] RtlSdrBufShort;
-		RtlSdrBufShort = NULL;
-	}
 	EnableWindow(GetDlgItem(h_dialog, IDC_RTL_BUFFER), TRUE);
 	EnableWindow(GetDlgItem(h_dialog, IDC_RTL_DEVICE), TRUE);
 }
@@ -516,16 +509,19 @@ extern "C" void __stdcall SetCallback(void (*ParentCallback)(int, int, float, vo
 
 static void RtlSdrCallback(unsigned char *buf, uint32_t len, void * /* ctx */)
 {
-	if (!ExtIODataU8 && RtlSdrBufShort && buf && len == RtlSdrBufSize) {
+	if (!buf || len != RtlSdrBufSize)
+		return;
+
+	if (!ExtIODataU8 && RtlSdrBufShort) {
 		short *short_buf = RtlSdrBufShort;
 		unsigned char *char_buf = buf;
 
 		for (uint32_t i = 0; i < len; i++)
 			*short_buf++ = ((short)(*char_buf++)) - 128;
 
-		ExtIOCallback(RtlSdrBufSize, 0, 0, (void *)RtlSdrBufShort);
+		ExtIOCallback(RtlSdrBufSize, 0, 0, RtlSdrBufShort);
 	} else if (ExtIODataU8 && buf && len == RtlSdrBufSize) {
-		ExtIOCallback(RtlSdrBufSize, 0, 0, (void *)buf);
+		ExtIOCallback(RtlSdrBufSize, 0, 0, buf);
 	}
 }
 
