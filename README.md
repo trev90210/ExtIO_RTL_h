@@ -6,6 +6,7 @@ ExtIO wrapper for librtlsdr for use with [**HDSDR**](https://hdsdr.de/) and othe
 * removed makefiles and added cmake support to compile with Visual Studio 2019
 * added all required libraries as submodules
 * added github action for automatic build
+* merged 'Add Bias Tee option, add branch auto switch' from Jorge's testing branch
 
 Clone with submodules to automatically retrieve libusb, pthread-win32 and librtlsdr from git bash:
 
