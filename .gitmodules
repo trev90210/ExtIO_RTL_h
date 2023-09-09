@@ -4,6 +4,9 @@
 [submodule "pthread-win32"]
 	path = pthread-win32
 	url = https://github.com/hayguen/pthread-win32.git
+[submodule "tomlplusplus"]
+	path = tomlplusplus
+	url = https://github.com/marzer/tomlplusplus.git
 [submodule "librtlsdr"]
 	path = librtlsdr
 	url = https://github.com/hayguen/librtlsdr.git

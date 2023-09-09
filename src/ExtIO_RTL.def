@@ -1,28 +1,51 @@
 LIBRARY ExtIO_RTL
 EXPORTS
+    CloseHW
+    GetHWLO64
+    GetHWLO
+    GetHWSR
+    GetStatus
+    InitHW
+    OpenHW
+    SetCallback
+    SetHWLO
+    SetHWLO64
+    ShowGUI
+    HideGUI
+    SwitchGUI
+    StartHW
+;    StartHW64
+    StopHW
 
-CloseHW
-ExtIoGetActualSrateIdx
-ExtIoGetSetting
-ExtIoGetSrates
-ExtIoSDRInfo
-ExtIoSetSetting
-ExtIoSetSrate
-GetActualAttIdx
-GetAttenuators
-GetHWLO64
-GetHWLO
-GetHWSR
-GetStatus
-HideGUI
-InitHW
-OpenHW
-SetAttenuator
-SetCallback
-SetHWLO64
-SetHWLO
-ShowGUI
-StartHW64
-StartHW
-StopHW
-SwitchGUI
+    VersionInfo
+    ExtIoSDRInfo
+
+;
+    TuneChanged64
+    TuneChanged
+    GetTune64
+    GetTune
+
+; Samplerate / Bandwidth:
+    ExtIoGetSrates
+    ExtIoGetBandwidth
+    ExtIoGetActualSrateIdx
+    ExtIoSetSrate
+
+
+; Settings
+    ExtIoGetSetting
+    ExtIoSetSetting
+
+    GetAttenuators
+    GetActualAttIdx
+    SetAttenuator
+
+    ExtIoGetMGCs
+    ExtIoGetActualMgcIdx
+    ExtIoSetMGC
+
+;    ExtIoGetAGCs
+;    ExtIoGetActualAGCidx
+;    ExtIoSetAGC
+;    ExtIoShowMGC
