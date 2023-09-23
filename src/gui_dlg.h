@@ -14,6 +14,8 @@ bool is_gui_available();
 void CreateGUI();
 void DestroyGUI();
 
+void gui_show_missing_device(int from);  // 0 == OpenHW(), 1 == StartHW()
+
 void post_update_gui_init();
 void post_update_gui_fields();
 

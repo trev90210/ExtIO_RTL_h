@@ -91,6 +91,14 @@ static int maxDecimation = 0;
 //   intended for a log file  AND  a message box
 #define SDRLOG( A, TEXT ) do { if ( gpfnExtIOCallbackPtr ) gpfnExtIOCallbackPtr(-1, A, 0, TEXT ); } while (0)
 
+#define SDRLG( A, TEXT, ...) do { \
+  if ( gpfnExtIOCallbackPtr ) { \
+    snprintf(acMsg, 255, TEXT, __VA_ARGS__); \
+    acMsg[255] = 0; \
+    gpfnExtIOCallbackPtr(-1, A, 0, acMsg ); \
+  } \
+} while (0)
+
 
 static INT_PTR CALLBACK MainDlgProc(HWND, UINT, WPARAM, LPARAM);
 static HWND h_dlg = NULL;
@@ -110,7 +118,17 @@ void CreateGUI()
 {
   h_dlg = CreateDialog(hInst, MAKEINTRESOURCE(IDD_RTL_SETTINGS), NULL, (DLGPROC)MainDlgProc);
   if (h_dlg)
+  {
+    char acMsg[256];
+    RECT rect;
     ShowWindow(h_dlg, SW_HIDE);
+    if (GetWindowRect(h_dlg, &rect))
+    {
+      int width = rect.right - rect.left;
+      int height = rect.bottom - rect.top;
+      SDRLG(extHw_MSG_DEBUG, "Created Window: size %d x %d", width, height);
+    }
+  }
 }
 
 void DestroyGUI()
@@ -232,6 +250,21 @@ void LIBRTL_API  __stdcall SwitchGUI()
     else
       ShowWindow(h_dlg, SW_SHOW);
   }
+}
+
+void gui_show_missing_device(int from)  // 0 == OpenHW(), 1 == StartHW()
+{
+  static bool shown_openhw_err = false;
+
+  if (!shown_openhw_err)
+  {
+    ::MessageBoxA(NULL, "No compatible RTL-SDR device found!", "Error", 0);
+    shown_openhw_err = true;
+    return;
+  }
+
+  if (from == 1 && h_dlg && !IsWindowVisible(h_dlg))
+    ::MessageBoxA(NULL, "No compatible RTL-SDR device found!", "Error", 0);
 }
 
 
@@ -779,7 +812,11 @@ INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
         RtlSelectedDeviceIdx = ComboBox_GetCurSel(GET_WM_COMMAND_HWND(wParam, lParam));
         if (RtlSelectedDeviceIdx >= RtlNumDevices)
           RtlSelectedDeviceIdx = RtlNumDevices;
-        if (RtlSdrDev && !ThreadStreamToSDR.load() && !RtlDeviceInfo::is_same(RtlOpenDevice, RtlDeviceList[RtlSelectedDeviceIdx]))
+        if (RtlSelectedDeviceIdx >= MAX_RTL_DEVICES
+          || RtlDeviceList[RtlSelectedDeviceIdx].dev_idx >= MAX_RTL_DEVICES)
+        {
+        }
+        else if (RtlSdrDev && !ThreadStreamToSDR.load() && !RtlDeviceInfo::is_same(RtlOpenDevice, RtlDeviceList[RtlSelectedDeviceIdx]))
         {
           open_selected_rtl_device();
           post_update_gui_init();  // post_update_gui_fields();

@@ -180,8 +180,27 @@ uint32_t retrieve_devices()
     }
     ++RtlNumDevices;
   }
+
+  if (!RtlNumDevices)
+  {
+    RtlDeviceInfo& dev_info = RtlDeviceList[RtlNumDevices];
+    dev_info.clear();
+    snprintf(dev_info.name, 255, "%s", "No compatible device found!");
+    dev_info.name[255] = 0;
+    dev_info.dev_idx = MAX_RTL_DEVICES;
+    ++RtlNumDevices;
+  }
+
   if (RtlSelectedDeviceIdx >= RtlNumDevices)
     RtlSelectedDeviceIdx = 0;
+
+  char acMsg[256];
+  SDRLG(extHw_MSG_DEBUG, "retrieve_devices(): found %u devices:", RtlNumDevices);
+  for (unsigned k = 0; k < RtlNumDevices; ++k)
+  {
+    RtlDeviceInfo& dev_info = RtlDeviceList[k];
+    SDRLG(extHw_MSG_DEBUG, "retrieve_devices(): dev %u: %s", unsigned(dev_info.dev_idx), dev_info.name);
+  }
 
   return RtlNumDevices;
 }
@@ -201,8 +220,13 @@ bool open_selected_rtl_device()
   char acMsg[256];
   close_rtl_device();
 
+  if (RtlSelectedDeviceIdx >= MAX_RTL_DEVICES
+    || RtlDeviceList[RtlSelectedDeviceIdx].dev_idx >= MAX_RTL_DEVICES)
+    return false;
+
   RtlOpenDevice = RtlDeviceList[RtlSelectedDeviceIdx];
-  SDRLG(extHw_MSG_DEBUG, "opening RTL device %u idx %u", unsigned(RtlOpenDevice.dev_idx), unsigned(RtlSelectedDeviceIdx));
+  SDRLG(extHw_MSG_DEBUG, "opening RTL device %u idx %u: %s",
+    unsigned(RtlOpenDevice.dev_idx), unsigned(RtlSelectedDeviceIdx), RtlOpenDevice.name);
   int r = rtlsdr_open(&RtlSdrDev, RtlOpenDevice.dev_idx);
   if (r < 0)
   {
@@ -210,8 +234,14 @@ bool open_selected_rtl_device()
     RtlOpenDevice.clear();
     return false;
   }
+  SDRLG(extHw_MSG_DEBUG, "open_selected_rtl_device() -> handle 0x%p", RtlSdrDev);
 
   rtlsdr_tuner t = rtlsdr_get_tuner_type(RtlSdrDev);
+  if (tunerNo < tuners::N)
+    SDRLG(extHw_MSG_DEBUG, "opened RTL device has tuner type %s", tuners::names[unsigned(t)]);
+  else
+    SDRLG(extHw_MSG_ERROR, "opened RTL device has unknown tuner type %u", unsigned(t));
+
   tunerNo = uint32_t(t);
   GotTunerInfo = true;
 

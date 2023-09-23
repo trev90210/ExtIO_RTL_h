@@ -211,6 +211,11 @@ bool  LIBRTL_API __stdcall OpenHW()
   if (!r)
   {
     SDRLOG(extHw_MSG_ERROR, "OpenHW(): error opening RTL device");
+    if (RtlSelectedDeviceIdx >= MAX_RTL_DEVICES
+      || RtlDeviceList[RtlSelectedDeviceIdx].dev_idx >= MAX_RTL_DEVICES)
+    {
+      gui_show_missing_device(0);  // 0 == OpenHW(), 1 == StartHW()
+    }
     return r;
   }
   post_update_gui_init();  // post_update_gui_fields();
@@ -401,11 +406,12 @@ extern "C"
 int LIBRTL_API __stdcall StartHW(long freq)
 {
   char acMsg[256];
-  SDRLOG(extHw_MSG_DEBUG, "StartHW()");
+  SDRLG(extHw_MSG_DEBUG, "StartHW() with device handle 0x%p", RtlSdrDev);
 
   if (!RtlSdrDev)
   {
     SDRLOG(extHw_MSG_ERROR, "StartHW(): fail without open device");
+    gui_show_missing_device(1);  // 0 == OpenHW(), 1 == StartHW()
     return -1;
   }
 
@@ -423,7 +429,11 @@ int LIBRTL_API __stdcall StartHW(long freq)
 
   ThreadStreamToSDR = true;
   if (Start_Thread() < 0)
+  {
+    SDRLOG(extHw_MSG_ERROR, "StartHW(): Error to start streaming thread");
     return -1;
+  }
+  SDRLOG(extHw_MSG_DEBUG, "StartHW(): Started streaming thread");
 
   commandEverything = true;
   SetHWLO(freq);
@@ -1092,7 +1102,10 @@ int Start_Thread()
 {
   //If already running, exit
   if (thread_handle != INVALID_HANDLE_VALUE)
+  {
+    SDRLOG(extHw_MSG_ERROR, "Start_Thread(): Error thread still running!");
     return 0;   // all fine
+  }
 
   terminateThread = false;
 
@@ -1121,14 +1134,20 @@ int Start_Thread()
 
   // Reset endpoint
   if (rtlsdr_reset_buffer(RtlSdrDev) < 0)
+  {
+    SDRLOG(extHw_MSG_ERROR, "Start_Thread(): Error at rtlsdr_reset_buffer()");
     return -1;
+  }
 
   cb_ctx.reset();
 
   SDRLOG(extHw_MSG_DEBUG, "Starting ASYNC receive thread ..");
   thread_handle = (HANDLE)_beginthread(ThreadProc, 0, NULL);
   if (thread_handle == INVALID_HANDLE_VALUE)
+  {
+    SDRLOG(extHw_MSG_ERROR, "Start_Thread(): Error at _beginthread()");
     return -1;  // ERROR
+  }
 
   //SetThreadPriority(thread_handle, THREAD_PRIORITY_TIME_CRITICAL);
   return 0;
@@ -1185,6 +1204,7 @@ int Stop_Thread()
   if (thread_handle == INVALID_HANDLE_VALUE)
     return 0;
   WaitForSingleObject(thread_handle, INFINITE);
+  SDRLOG(extHw_MSG_DEBUG, "Stop_Thread(): thread() stopped successfully");
   thread_handle = INVALID_HANDLE_VALUE;
   return 0;
 }
@@ -1192,6 +1212,8 @@ int Stop_Thread()
 
 void ThreadProc(void* p)
 {
+  char acMsg[256];
+  SDRLG(extHw_MSG_DEBUG, "ThreadProc() with device handle 0x%p", RtlSdrDev);
   // Blocks until rtlsdr_cancel_async() is called
   rtlsdr_read_async(
     RtlSdrDev,
@@ -1200,6 +1222,7 @@ void ThreadProc(void* p)
     0,
     buffer_len.load()
   );
+  SDRLOG(extHw_MSG_DEBUG, "ThreadProc(): rtlsdr_read_async() finished. Finishing thread.");
   thread_handle = INVALID_HANDLE_VALUE;
   _endthread();
 }
