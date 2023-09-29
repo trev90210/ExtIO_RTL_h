@@ -8,6 +8,15 @@
 
 struct BandAction
 {
+  typedef enum
+  {
+    info_not_loaded = 0,
+    info_parse_error,
+    info_disabled,
+    info_no_bands,
+    info_ok
+  } Band_Info;
+
   // mandatory
   std::string id;
   std::optional<std::string> name;
@@ -39,5 +48,7 @@ struct BandAction
 };
 
 const char* init_toml_config();
+
+BandAction::Band_Info get_band_info();
 
 const BandAction* update_band_action(double new_frequency);

@@ -186,7 +186,7 @@ void gui_SetMGC(int mgc_idx)
 {
   int pos = if_gains[mgc_idx];
 
-  if (h_dlg)
+  if (h_dlg && isR82XX())
   {
     HWND hDlgItmIF_AGC = GetDlgItem(h_dlg, IDC_TUNER_IF_AGC);
     HWND hIFGain = GetDlgItem(h_dlg, IDC_IF_GAIN_SLIDER);
@@ -252,6 +252,12 @@ void LIBRTL_API  __stdcall SwitchGUI()
   }
 }
 
+void gui_show()
+{
+  ShowGUI();
+}
+
+
 void gui_show_missing_device(int from)  // 0 == OpenHW(), 1 == StartHW()
 {
   static bool shown_openhw_err = false;
@@ -265,6 +271,12 @@ void gui_show_missing_device(int from)  // 0 == OpenHW(), 1 == StartHW()
 
   if (from == 1 && h_dlg && !IsWindowVisible(h_dlg))
     ::MessageBoxA(NULL, "No compatible RTL-SDR device found!", "Error", 0);
+}
+
+void gui_show_invalid_device()
+{
+  ::MessageBoxA(NULL, "Device invalid. Select new RTL-SDR device!", "Error", 0);
+  return;
 }
 
 
@@ -295,6 +307,7 @@ static void updateTunerBandCenters(HWND h_dlg)
   ComboBox_AddString(hDlgItmBandCtr, TEXT("Upper Half: + Samplerate/4"));
   ComboBox_AddString(hDlgItmBandCtr, TEXT("Lower Half: - Samplerate/4"));
   ComboBox_SetCurSel(hDlgItmBandCtr, nxt.band_center_sel);
+  EnableWindow(hDlgItmBandCtr, isR82XX() ? TRUE : FALSE);
 }
 
 static void updateRFTunerGains(HWND h_dlg)
@@ -382,7 +395,12 @@ static void updateIFTunerGains(HWND h_dlg)
     SendMessage(hIFGain, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)-nxt.if_gain_val);
   }
 
-  if (nxt.tuner_if_agc)
+  if (!isR82XX())
+  {
+    EnableWindow(hIFGain, FALSE);
+    Static_SetText(hIFGainLabel, TEXT(""));
+  }
+  else if (nxt.tuner_if_agc)
   {
     EnableWindow(hIFGain, FALSE);
     Static_SetText(hIFGainLabel, TEXT("AGC"));
@@ -453,6 +471,7 @@ static void updateGPIOs(HWND h_dlg)
 
 INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+  char acMsg[256];
   HWND h_dlg = hwndDlg;
   static HBRUSH BRUSH_RED = CreateSolidBrush(RGB(255, 0, 0));
   static HBRUSH BRUSH_GREEN = CreateSolidBrush(RGB(0, 255, 0));
@@ -471,6 +490,7 @@ INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
     HWND hDlgItmRF_AGC = GetDlgItem(h_dlg, IDC_TUNER_RF_AGC);
     HWND hDlgItmIF_AGC = GetDlgItem(h_dlg, IDC_TUNER_IF_AGC);
     HWND hDlgItmRtlDig_AGC = GetDlgItem(h_dlg, IDC_RTL_DIG_AGC);
+    HWND hDlgItmRtl_INC = GetDlgItem(h_dlg, IDC_RTL_INC);
     HWND hDlgItmBuffer = GetDlgItem(h_dlg, IDC_BUFFER);
     HWND hDlgItmPPM = GetDlgItem(h_dlg, IDC_PPM);
     HWND hDlgItmPPMS = GetDlgItem(h_dlg, IDC_PPM_S);
@@ -487,10 +507,16 @@ INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
     updateTunerBandCenters(h_dlg);
 
     Button_SetCheck(hDlgItmRF_AGC, nxt.tuner_rf_agc ? BST_CHECKED : BST_UNCHECKED);
-    Button_SetCheck(hDlgItmIF_AGC, nxt.tuner_if_agc ? BST_CHECKED : BST_UNCHECKED);
+    Button_SetCheck(hDlgItmIF_AGC, (nxt.tuner_if_agc && isR82XX()) ? BST_CHECKED : BST_UNCHECKED);
     Button_SetCheck(hDlgItmRtlDig_AGC, nxt.rtl_agc ? BST_CHECKED : BST_UNCHECKED);
     Button_SetCheck(hDlgItmOffset, nxt.offset_tuning ? BST_CHECKED : BST_UNCHECKED);
     Button_SetCheck(hDlgItmUsbSB, nxt.USB_sideband ? BST_CHECKED : BST_UNCHECKED);
+    Button_SetCheck(hDlgItmRtl_INC, nxt.rtl_impulse_noise_cancellation ? BST_CHECKED : BST_UNCHECKED);
+
+    ShowWindow(hDlgItmOffset, (RTLSDR_TUNER_E4000 == tunerNo) ? SW_SHOW : SW_HIDE);
+    ShowWindow(hDlgItmUsbSB, isR82XX() ? SW_SHOW : SW_HIDE);
+    EnableWindow(hDlgItmIF_AGC, isR82XX() ? TRUE : FALSE);
+    EnableWindow(hDlgItmBandCtr, isR82XX() ? TRUE : FALSE);
 
     TCHAR tempStr[256];
 
@@ -576,6 +602,10 @@ INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
       EnableWindow(hDlgItmTunerBW, enableTunerBW);
       EnableWindow(hDlgItmBandCenter, enableBandCenter);
       EnableWindow(hIFGain, enableIFGain);
+      EnableWindow(hDlgItmIF_AGC, isR82XX() ? TRUE : FALSE);
+
+      ShowWindow(hDlgItmOffset, (RTLSDR_TUNER_E4000 == tunerNo) ? SW_SHOW : SW_HIDE);
+      ShowWindow(hDlgItmUsbSB, isR82XX() ? SW_SHOW : SW_HIDE);
 
       const char* tunerText = tuners::names[tunerNo];
       TCHAR str[255];
@@ -605,6 +635,13 @@ INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
     {
       nxt.rtl_agc = (Button_GetCheck(GET_WM_COMMAND_HWND(wParam, lParam)) == BST_CHECKED) ? 1 : 0;
       trigger_control(CtrlFlags::rtl_agc);
+      return TRUE;
+    }
+    case IDC_RTL_INC:
+    {
+      int nc = (Button_GetCheck(GET_WM_COMMAND_HWND(wParam, lParam)) == BST_CHECKED) ? 1 : 0;
+      nxt.rtl_impulse_noise_cancellation = nc;
+      trigger_control(CtrlFlags::rtl_impulse_nc);
       return TRUE;
     }
     case IDC_OFFSET:
@@ -676,7 +713,12 @@ INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
     {
       HWND hIFGain = GetDlgItem(h_dlg, IDC_IF_GAIN_SLIDER);
       HWND hIFGainLabel = GetDlgItem(h_dlg, IDC_TUNER_IF_GAIN_VALUE);
-      if (Button_GetCheck(GET_WM_COMMAND_HWND(wParam, lParam)) == BST_CHECKED) //it is checked
+      if (!isR82XX())
+      {
+        EnableWindow(hIFGain, FALSE);
+        Static_SetText(hIFGainLabel, TEXT(""));
+      }
+      else if (Button_GetCheck(GET_WM_COMMAND_HWND(wParam, lParam)) == BST_CHECKED) //it is checked
       {
         nxt.tuner_if_agc = 1; // automatic
         last.if_gain_val = nxt.if_gain_val + 1;
@@ -811,12 +853,15 @@ INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
       {
         RtlSelectedDeviceIdx = ComboBox_GetCurSel(GET_WM_COMMAND_HWND(wParam, lParam));
         if (RtlSelectedDeviceIdx >= RtlNumDevices)
-          RtlSelectedDeviceIdx = RtlNumDevices;
+          RtlSelectedDeviceIdx = 0;
         if (RtlSelectedDeviceIdx >= MAX_RTL_DEVICES
           || RtlDeviceList[RtlSelectedDeviceIdx].dev_idx >= MAX_RTL_DEVICES)
         {
+          SDRLG(extHw_MSG_ERROR, "Source ComboBox selected invalid device %u of %u with dev_idx %u",
+            RtlSelectedDeviceIdx, RtlNumDevices, RtlDeviceList[RtlSelectedDeviceIdx].dev_idx);
         }
-        else if (RtlSdrDev && !ThreadStreamToSDR.load() && !RtlDeviceInfo::is_same(RtlOpenDevice, RtlDeviceList[RtlSelectedDeviceIdx]))
+        else if (RtlSdrDev && !ThreadStreamToSDR.load())
+          // && !RtlDeviceInfo::is_same(RtlOpenDevice, RtlDeviceList[RtlSelectedDeviceIdx]))
         {
           open_selected_rtl_device();
           post_update_gui_init();  // post_update_gui_fields();
@@ -862,7 +907,7 @@ INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
 
     HWND hIFGain = GetDlgItem(h_dlg, IDC_IF_GAIN_SLIDER);
     HWND hIFGainLabel = GetDlgItem(h_dlg, IDC_TUNER_IF_GAIN_VALUE);
-    if ((HWND)lParam == hIFGain)
+    if ((HWND)lParam == hIFGain && isR82XX())
     {
       int pos = -SendMessage(hIFGain, TBM_GETPOS, (WPARAM)0, (LPARAM)0);
       for (int i = 0; i < n_if_gains - 1; ++i)

@@ -23,7 +23,8 @@ struct CtrlFlags
   static constexpr CtrlFlagT if_agc_gain = 4096;      // tuner if agc / if gain
   static constexpr CtrlFlagT gpio = 8192;             // gpio changed
   static constexpr CtrlFlagT band_changed = 16384;
-  static constexpr CtrlFlagT everything = 32768;      // command everything
+  static constexpr CtrlFlagT rtl_impulse_nc = 32768;
+  static constexpr CtrlFlagT everything = 65536;      // command everything
 };
 
 
@@ -47,7 +48,7 @@ struct ControlVars
   std::atomic_int if_gain_val = 1;
   std::atomic_int if_gain_idx = 1;
   std::atomic_int tuner_rf_agc = 1;   // 0 == off/manual, 1 == on/automatic
-  std::atomic_int tuner_if_agc = 1;   // 0 == off/manual, 1 == on/automatic
+  std::atomic_int tuner_if_agc = 0;   // 0 == off/manual, 1 == on/automatic
   std::atomic_int rtl_agc = 1;
   std::atomic_int sampling_mode = 0;
   std::atomic_int band_center_sel = 0;
@@ -56,6 +57,25 @@ struct ControlVars
   std::atomic_int USB_sideband = 0;
   std::atomic_int freq_corr_ppm = 0;
   std::atomic_int GPIO[NUM_GPIO_BUTTONS];
+
+  std::atomic_int rtl_impulse_noise_cancellation = -1;
+
+  std::atomic_int rtl_aagc_rf_en = -1;
+  std::atomic_int rtl_aagc_rf_inv = -1;
+  std::atomic_int rtl_aagc_rf_min = -1;
+  std::atomic_int rtl_aagc_rf_max = -1;
+
+  std::atomic_int rtl_aagc_if_en = -1;
+  std::atomic_int rtl_aagc_if_inv = -1;
+  std::atomic_int rtl_aagc_if_min = -1;
+  std::atomic_int rtl_aagc_if_max = -1;
+
+  std::atomic_int rtl_aagc_lg_lock = -1;  // lg: loop gain
+  std::atomic_int rtl_aagc_lg_unlock = -1;
+  std::atomic_int rtl_aagc_lg_ifr = -1;  // ifr: interference
+
+  std::atomic_int rtl_aagc_vtop[3] = { -1, -1, -1 };
+  std::atomic_int rtl_aagc_krf[4] = { -1, -1, -1, -1 };
 };
 
 extern std::atomic_int GPIO_pin[ControlVars::NUM_GPIO_BUTTONS];
@@ -109,6 +129,7 @@ extern uint32_t RtlSelectedDeviceIdx;  // index into RtlDeviceList[]
 extern rtlsdr_dev_t* RtlSdrDev;
 
 uint32_t retrieve_devices();
+bool is_device_handle_valid();
 void close_rtl_device();
 bool open_selected_rtl_device();
 

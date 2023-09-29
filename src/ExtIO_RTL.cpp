@@ -57,7 +57,7 @@ int VAR_ALWAYS_PCM16 = ALWAYS_PCM16;
 
 #define WITH_AGCS   0
 
-#define SETTINGS_IDENTIFIER "RTL_TCP_2023.1-1"
+#define SETTINGS_IDENTIFIER "RTL_2023.9-1"
 
 
 #ifdef _MSC_VER
@@ -174,6 +174,27 @@ bool  LIBRTL_API __stdcall InitHW(char* name, char* model, int& type)
 {
   init_toml_config();     // process as early as possible, but that depends on SDR software
 
+  const BandAction::Band_Info bi = get_band_info();
+  switch (bi)
+  {
+  case BandAction::Band_Info::info_not_loaded:
+    snprintf(band_disp_text, 255, "rtl_sdr_extio.cfg not loaded!");
+    break;
+  case BandAction::Band_Info::info_parse_error:
+    snprintf(band_disp_text, 255, "Error in rtl_sdr_extio.cfg!");
+    break;
+  case BandAction::Band_Info::info_disabled:
+    snprintf(band_disp_text, 255, "rtl_sdr_extio.cfg is not enabled");
+    break;
+  case BandAction::Band_Info::info_no_bands:
+    snprintf(band_disp_text, 255, "No bands defined");
+    break;
+  case BandAction::Band_Info::info_ok:
+    snprintf(band_disp_text, 255, "");
+    break;
+  }
+  update_band_text.store(true);
+
   strcpy_s(name, 63, "Realtek");
   strcpy_s(model, 15, "RTL2832U-SDR");
   name[63] = 0;
@@ -228,13 +249,27 @@ static CtrlFlagT _setHwLO_check_bands(int64_t freq)
 {
   static std::string last_band_name{};
   static char acMsg[256];
+  static bool last_was_undefined_band = false;
   CtrlFlagT changed_flags = 0;
+  const BandAction::Band_Info bi = get_band_info();
+  if (bi != BandAction::Band_Info::info_ok)
+    return changed_flags;
+
   if (nxt.LO_freq.load() == freq && !last_band_name.empty())
     return changed_flags;
 
   const BandAction* new_band = update_band_action(double(freq));
   if (!new_band)
+  {
+    if (!last_was_undefined_band)
+    {
+      snprintf(band_disp_text, 255, "Band: undefined");
+      last_was_undefined_band = true;
+      update_band_text.store(true);
+      SDRLG(extHw_MSG_LOG, "new band name: %s", band_disp_text);
+    }
     return changed_flags;
+  }
 
   // we are now moving into a new band with some defined action(s)
   const BandAction& ba = *new_band;   // have a shorter alias
@@ -244,6 +279,7 @@ static CtrlFlagT _setHwLO_check_bands(int64_t freq)
   if (update_band_name)
   {
     last_band_name = new_band_name;
+    last_was_undefined_band = false;
     snprintf(band_disp_text, 255, "Band: %s", new_band_name.c_str());
     update_band_text.store(true);
     SDRLG(extHw_MSG_LOG, "new band name: '%s'", band_disp_text);
@@ -408,11 +444,34 @@ int LIBRTL_API __stdcall StartHW(long freq)
   char acMsg[256];
   SDRLG(extHw_MSG_DEBUG, "StartHW() with device handle 0x%p", RtlSdrDev);
 
-  if (!RtlSdrDev)
+  while (!RtlSdrDev || !is_device_handle_valid())
   {
-    SDRLOG(extHw_MSG_ERROR, "StartHW(): fail without open device");
-    gui_show_missing_device(1);  // 0 == OpenHW(), 1 == StartHW()
-    return -1;
+    if (!RtlSdrDev)
+      SDRLOG(extHw_MSG_ERROR, "StartHW(): fail without open device");
+    else
+      SDRLOG(extHw_MSG_ERROR, "StartHW(): failed with invalid device handle");
+
+    ThreadStreamToSDR = false;
+    Stop_Thread();
+    close_rtl_device();
+    uint32_t N = retrieve_devices();
+    if (N)
+    {
+      bool ok = open_selected_rtl_device();
+      if (ok && N == 1)
+      {
+        SDRLOG(extHw_MSG_WARNING, "Starting with the only available device");
+        post_update_gui_init();  // post_update_gui_fields();
+        gui_show();
+        break;
+      }
+    }
+    EnableGUIControlsAtStop();
+    post_update_gui_init();  // post_update_gui_fields();
+    gui_show();
+    // gui_show_invalid_device();
+    // EXTIO_STATUS_CHANGE(gpfnExtIOCallbackPtr, extHw_Stop);
+    return -1;  // return smallest non-error amount - but Stop!
   }
 
   if (SDRsupportsSamplePCMU8)
@@ -696,6 +755,30 @@ enum class Setting {
   , RTL_GPIO_E_VALUE
   , RTL_GPIO_E_LABEL
 
+  , RTL_IMPULSE_NOICE_CANCEL
+
+  , RTL_AAGC_RF_EN
+  , RTL_AAGC_RF_INV
+  , RTL_AAGC_RF_MIN
+  , RTL_AAGC_RF_MAX
+
+  , RTL_AAGC_IF_EN
+  , RTL_AAGC_IF_INV
+  , RTL_AAGC_IF_MIN
+  , RTL_AAGC_IF_MAX
+
+  , RTL_AAGC_LG_LOCK
+  , RTL_AAGC_LG_UNLOCK
+  , RTL_AAGC_LG_IFR
+
+  , RTL_AAGC_VTOP1
+  , RTL_AAGC_VTOP2
+  , RTL_AAGC_VTOP3
+  , RTL_AAGC_KRF1
+  , RTL_AAGC_KRF2
+  , RTL_AAGC_KRF3
+  , RTL_AAGC_KRF4
+
   , NUM   // Last One == Amount
 };
 
@@ -871,6 +954,87 @@ int   LIBRTL_API __stdcall ExtIoGetSetting(int idx, char* description, char* val
     snprintf(value, 1024, "%s", &GPIO_txt[4][0]);
     return 0;
 
+  case Setting::RTL_IMPULSE_NOICE_CANCEL:
+    snprintf(description, 1024, "%s", "Impulse Noise Cancellation in RTL2832U. -1: don't touch, 0: off, 1: on");
+    snprintf(value, 1024, "%d", nxt.rtl_impulse_noise_cancellation.load());
+    return 0;
+
+  case Setting::RTL_AAGC_RF_EN:
+    snprintf(description, 1024, "%s", "Enable RF-AAGC - feedback to tuner. -1: don't touch or 0 .. 1");
+    snprintf(value, 1024, "%d", nxt.rtl_aagc_rf_en.load());
+    return 0;
+  case Setting::RTL_AAGC_RF_INV:
+    snprintf(description, 1024, "%s", "Invert RF-AAGC output - feedback to tuner. -1: don't touch or 0 .. 1");
+    snprintf(value, 1024, "%d", nxt.rtl_aagc_rf_inv.load());
+    return 0;
+  case Setting::RTL_AAGC_RF_MIN:
+    snprintf(description, 1024, "%s", "Min Gain for RF-AAGC - feedback to tuner. -1: don't touch or 0 .. 255");
+    snprintf(value, 1024, "%d", nxt.rtl_aagc_rf_min.load());
+    return 0;
+  case Setting::RTL_AAGC_RF_MAX:
+    snprintf(description, 1024, "%s", "Max Gain for RF-AAGC - feedback to tuner. -1: don't touch or 0 .. 255");
+    snprintf(value, 1024, "%d", nxt.rtl_aagc_rf_max.load());
+    return 0;
+
+  case Setting::RTL_AAGC_IF_EN:
+    snprintf(description, 1024, "%s", "Enable IF-AAGC - feedback to tuner. -1: don't touch or 0 .. 1");
+    snprintf(value, 1024, "%d", nxt.rtl_aagc_if_en.load());
+    return 0;
+  case Setting::RTL_AAGC_IF_INV:
+    snprintf(description, 1024, "%s", "Invert IF-AAGC output - feedback to tuner. -1: don't touch or 0 .. 1");
+    snprintf(value, 1024, "%d", nxt.rtl_aagc_if_inv.load());
+    return 0;
+  case Setting::RTL_AAGC_IF_MIN:
+    snprintf(description, 1024, "%s", "Min Gain for IF-AGC - feedback to tuner. -1: don't touch or 0 .. 255");
+    snprintf(value, 1024, "%d", nxt.rtl_aagc_if_min.load());
+    return 0;
+  case Setting::RTL_AAGC_IF_MAX:
+    snprintf(description, 1024, "%s", "Max Gain for IF-AGC - feedback to tuner. -1: don't touch or 0 .. 255");
+    snprintf(value, 1024, "%d", nxt.rtl_aagc_if_max.load());
+    return 0;
+
+  case Setting::RTL_AAGC_LG_LOCK:
+    snprintf(description, 1024, "%s", "AAGC Loop Gain Lock. -1: don't touch or 0 .. 31");
+    snprintf(value, 1024, "%d", nxt.rtl_aagc_lg_lock.load());
+    return 0;
+  case Setting::RTL_AAGC_LG_UNLOCK:
+    snprintf(description, 1024, "%s", "AAGC Loop Gain UnLock. -1: don't touch or 0 .. 31");
+    snprintf(value, 1024, "%d", nxt.rtl_aagc_lg_unlock.load());
+    return 0;
+  case Setting::RTL_AAGC_LG_IFR:
+    snprintf(description, 1024, "%s", "AAGC Loop Gain Interference. -1: don't touch or 0 .. 31");
+    snprintf(value, 1024, "%d", nxt.rtl_aagc_lg_ifr .load());
+    return 0;
+
+  case Setting::RTL_AAGC_VTOP1:
+    snprintf(description, 1024, "%s", "RTL AGC gain distribution RF / IF: Take-Over-Point1 aka VTOP1. -1: don't touch or 0 .. 63");
+    snprintf(value, 1024, "%d", nxt.rtl_aagc_vtop[0].load());
+    return 0;
+  case Setting::RTL_AAGC_VTOP2:
+    snprintf(description, 1024, "%s", "RTL AGC gain distribution RF / IF: Take-Over-Point2 aka VTOP2. -1: don't touch or 0 .. 63");
+    snprintf(value, 1024, "%d", nxt.rtl_aagc_vtop[1].load());
+    return 0;
+  case Setting::RTL_AAGC_VTOP3:
+    snprintf(description, 1024, "%s", "RTL AGC gain distribution RF / IF: Take-Over-Point3 aka VTOP3. -1: don't touch or 0 .. 63");
+    snprintf(value, 1024, "%d", nxt.rtl_aagc_vtop[2].load());
+    return 0;
+  case Setting::RTL_AAGC_KRF1:
+    snprintf(description, 1024, "%s", "RTL AGC RF gain degrade ratio 1 aka KRF1. -1: don't touch or 0 .. 255");
+    snprintf(value, 1024, "%d", nxt.rtl_aagc_krf[0].load());
+    return 0;
+  case Setting::RTL_AAGC_KRF2:
+    snprintf(description, 1024, "%s", "RTL AGC RF gain degrade ratio 2 aka KRF2. -1: don't touch or 0 .. 255");
+    snprintf(value, 1024, "%d", nxt.rtl_aagc_krf[1].load());
+    return 0;
+  case Setting::RTL_AAGC_KRF3:
+    snprintf(description, 1024, "%s", "RTL AGC RF gain degrade ratio 3 aka KRF3. -1: don't touch or 0 .. 255");
+    snprintf(value, 1024, "%d", nxt.rtl_aagc_krf[2].load());
+    return 0;
+  case Setting::RTL_AAGC_KRF4:
+    snprintf(description, 1024, "%s", "RTL AGC RF gain degrade ratio 4 aka KRF4. -1: don't touch or 0 .. 255");
+    snprintf(value, 1024, "%d", nxt.rtl_aagc_krf[3].load());
+    return 0;
+
   default:
     return -1;  // ERROR
   }
@@ -1024,6 +1188,67 @@ void  LIBRTL_API __stdcall ExtIoSetSetting(int idx, const char* value)
     snprintf(&GPIO_txt[4][0], 15, "%s", value); GPIO_txt[4][15] = 0;
     break;
 
+  case Setting::RTL_IMPULSE_NOICE_CANCEL:
+    nxt.rtl_impulse_noise_cancellation = atoi(value);
+    break;
+
+  case Setting::RTL_AAGC_RF_EN:
+    nxt.rtl_aagc_rf_en = atoi(value);
+    break;
+  case Setting::RTL_AAGC_RF_INV:
+    nxt.rtl_aagc_rf_inv = atoi(value);
+    break;
+  case Setting::RTL_AAGC_RF_MIN:
+    nxt.rtl_aagc_rf_min = atoi(value);
+    break;
+  case Setting::RTL_AAGC_RF_MAX:
+    nxt.rtl_aagc_rf_max = atoi(value);
+    break;
+
+  case Setting::RTL_AAGC_IF_EN:
+    nxt.rtl_aagc_if_en = atoi(value);
+    break;
+  case Setting::RTL_AAGC_IF_INV:
+    nxt.rtl_aagc_if_inv = atoi(value);
+    break;
+  case Setting::RTL_AAGC_IF_MIN:
+    nxt.rtl_aagc_if_min = atoi(value);
+    break;
+  case Setting::RTL_AAGC_IF_MAX:
+    nxt.rtl_aagc_if_max = atoi(value);
+    break;
+
+  case Setting::RTL_AAGC_LG_LOCK:
+    nxt.rtl_aagc_lg_lock = atoi(value);
+    break;
+  case Setting::RTL_AAGC_LG_UNLOCK:
+    nxt.rtl_aagc_lg_unlock = atoi(value);
+    break;
+  case Setting::RTL_AAGC_LG_IFR:
+    nxt.rtl_aagc_lg_ifr = atoi(value);
+    break;
+
+  case Setting::RTL_AAGC_VTOP1:
+    nxt.rtl_aagc_vtop[0] = atoi(value);
+    break;
+  case Setting::RTL_AAGC_VTOP2:
+    nxt.rtl_aagc_vtop[1] = atoi(value);
+    break;
+  case Setting::RTL_AAGC_VTOP3:
+    nxt.rtl_aagc_vtop[2] = atoi(value);
+    break;
+  case Setting::RTL_AAGC_KRF1:
+    nxt.rtl_aagc_krf[0] = atoi(value);
+    break;
+  case Setting::RTL_AAGC_KRF2:
+    nxt.rtl_aagc_krf[1] = atoi(value);
+    break;
+  case Setting::RTL_AAGC_KRF3:
+    nxt.rtl_aagc_krf[2] = atoi(value);
+    break;
+  case Setting::RTL_AAGC_KRF4:
+    nxt.rtl_aagc_krf[3] = atoi(value);
+    break;
   }
 }
 
@@ -1215,14 +1440,27 @@ void ThreadProc(void* p)
   char acMsg[256];
   SDRLG(extHw_MSG_DEBUG, "ThreadProc() with device handle 0x%p", RtlSdrDev);
   // Blocks until rtlsdr_cancel_async() is called
-  rtlsdr_read_async(
+  int r = rtlsdr_read_async(
     RtlSdrDev,
     (rtlsdr_read_async_cb_t)&RtlSdrCallback,
     &cb_ctx,
     0,
     buffer_len.load()
   );
-  SDRLOG(extHw_MSG_DEBUG, "ThreadProc(): rtlsdr_read_async() finished. Finishing thread.");
+
   thread_handle = INVALID_HANDLE_VALUE;
+
+  if (terminateThread.load())
+    SDRLOG(extHw_MSG_DEBUG, "ThreadProc(): rtlsdr_read_async() finished. Finishing thread.");
+  else
+  {
+    SDRLG(extHw_MSG_WARNING, "ThreadProc(): rtlsdr_read_async() finished unexpected - with %d", r);
+    EXTIO_STATUS_CHANGE(gpfnExtIOCallbackPtr, extHw_Stop);
+    close_rtl_device();
+  }
+
+  terminateThread = true;
+  SDRLOG(extHw_MSG_DEBUG, "Stopping ASYNC receive thread with rtlsdr_cancel_async() ..");
+
   _endthread();
 }

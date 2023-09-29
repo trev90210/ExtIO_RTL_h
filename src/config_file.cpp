@@ -45,6 +45,8 @@ static const std::string key_gpio_button4("gpio_button4");
 
 static std::vector<BandAction> band_actions;
 
+static BandAction::Band_Info band_status = BandAction::info_not_loaded;
+
 static const BandAction initial_band_action{ "_init_", {}, -1.0, -1.0 };
 
 static const BandAction* current_band_action = &initial_band_action;
@@ -411,10 +413,20 @@ const char* init_toml_config()
       parse_cfg = it_enable->second.as_boolean()->get();
 
     if (parse_cfg)
+    {
       print_toml_tables(0, tbl, parsed_infos);
+
+      if (!band_actions.size())
+        band_status = BandAction::Band_Info::info_no_bands;
+      else
+        band_status = BandAction::Band_Info::info_ok;
+    }
+    else
+      band_status = BandAction::Band_Info::info_disabled;
   }
   catch (const toml::parse_error& err)
   {
+    band_status = BandAction::Band_Info::info_parse_error;
     parsed_infos << "Parsing failed : \n" << err << "\n";
   }
 
@@ -422,6 +434,10 @@ const char* init_toml_config()
   return fn;
 }
 
+BandAction::Band_Info get_band_info()
+{
+  return band_status;
+}
 
 
 const BandAction* update_band_action(double new_frequency)

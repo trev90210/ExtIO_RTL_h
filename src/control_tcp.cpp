@@ -20,7 +20,7 @@ std::atomic_int GPIO_pin[ControlVars::NUM_GPIO_BUTTONS] = { 0, 1, 2, 4, 5 };
 std::atomic_int GPIO_inv[ControlVars::NUM_GPIO_BUTTONS] = { 0, 0, 0, 0, 0 };
 std::atomic_int GPIO_en[ControlVars::NUM_GPIO_BUTTONS] = { 1, 1, 1, 1, 1 };
 char GPIO_txt[ControlVars::NUM_GPIO_BUTTONS][16] = {
-    "4.5V BIAS TEE",
+    "! 4.5V BIAS T !",
     "GPIO1 / PIN32",
     "GPIO2 / PIN31",
     "GPIO4 / PIN30",
@@ -88,6 +88,12 @@ static inline void clear_flag(CtrlFlagT& flags, CtrlFlagT f)
   flags &= ~f;
 }
 
+
+static inline bool isR82XX()
+{
+  const int t = tunerNo;
+  return (RTLSDR_TUNER_R820T == t || RTLSDR_TUNER_R828D == t || RTLSDR_TUNER_BLOG_V4 == t);
+}
 
 int nearestBwIdx(int bw)
 {
@@ -205,9 +211,34 @@ uint32_t retrieve_devices()
   return RtlNumDevices;
 }
 
+bool is_device_handle_valid()
+{
+#define EEPROM_SIZE 256
+  // uint8_t buf[EEPROM_SIZE];
+  RtlDeviceInfo dev_info;
+  char acMsg[256];
+  if (!RtlSdrDev)
+  {
+    SDRLOG(extHw_MSG_WARNING, "is_device_handle_valid(): invalid handle!");
+    return false;
+  }
+
+  //int r = rtlsdr_read_eeprom(RtlSdrDev, buf, 0, EEPROM_SIZE);
+  int r = rtlsdr_get_usb_strings(RtlSdrDev, dev_info.vendor, dev_info.product, dev_info.serial);
+  if (r < 0) {
+    SDRLG(extHw_MSG_ERROR, "is_device_handle_valid(): handle 0x%p invalid!", RtlSdrDev);
+    return false;
+  }
+
+  SDRLG(extHw_MSG_DEBUG, "is_device_handle_valid(): handle 0x%p is ok.", RtlSdrDev);
+  return true;
+}
 
 void close_rtl_device()
 {
+  char acMsg[256];
+  if (RtlSdrDev)
+    SDRLG(extHw_MSG_DEBUG, "close_rtl_device(handle 0x%p)", RtlSdrDev);
   rtlsdr_close(RtlSdrDev);
   RtlSdrDev = 0;
   tunerNo = RTLSDR_TUNER_UNKNOWN;
@@ -292,7 +323,7 @@ bool Control_Changes()
   CtrlFlagT changed = somewhat_changed.exchange(0);
   const bool command_all = commandEverything.exchange(false) || (changed & CtrlFlags::everything);
 
-  SDRLG(extHw_MSG_DEBUG, "Control_Changes(): %s %x", command_all ? "ALL" : "", unsigned(changed));
+  SDRLG(extHw_MSG_DEBUG, "Control_Changes(): %s changes 0x%x", command_all ? "ALL" : "", unsigned(changed));
 
   if (last.sampling_mode != nxt.sampling_mode || command_all)
   {
@@ -389,6 +420,10 @@ bool Control_Changes()
   const uint64_t f64 = uint64_t(nxt.LO_freq.load());
   if (last.LO_freq.load() != f64 || (changed & CtrlFlags::freq) || command_all)
   {
+    int prev_on, prev_counter;
+    rtlsdr_get_impulse_nc(dev, &prev_on, &prev_counter);
+    SDRLG(extHw_MSG_DEBUG, "Control_Changes(): rtlsdr_get_impulse_nc() -> %d, %d)", prev_on, prev_counter);
+
     SDRLOG(extHw_MSG_DEBUG, "Control_Changes(): rtlsdr_set_center_freq64()");
     int r = rtlsdr_set_center_freq64(dev, f64);
     if (r < 0)
@@ -428,10 +463,13 @@ bool Control_Changes()
     }
 
     // re-parametrize Tuner IF AGC and/or IF gain
-    if (nxt.tuner_if_agc)
+    if (!isR82XX())
+    {
+    }
+    else if (nxt.tuner_if_agc)
     {
       SDRLOG(extHw_MSG_DEBUG, "Control_Changes(): rtlsdr_set_tuner_if_mode(0)");
-      int r = rtlsdr_set_tuner_if_mode(dev, 0);  // SET_TUNER_IF_MODE
+      int r = rtlsdr_set_tuner_if_mode(dev, 0);  // SET_TUNER_IF_MODE; 0 activates AGC
       if (r < 0)
         SDRLG(extHw_MSG_ERROR, "Error setting rtlsdr_set_tuner_if_mode(): %d", r);
       else
@@ -566,7 +604,11 @@ bool Control_Changes()
   {
     int tmp_agc = nxt.tuner_if_agc;
     int tmp_gain = nxt.if_gain_idx;
-    if (tmp_agc)
+    if (!isR82XX())
+    {
+
+    }
+    else if (tmp_agc)
     {
       SDRLOG(extHw_MSG_DEBUG, "Control_Changes(): rtlsdr_set_tuner_if_mode()");
       int r = rtlsdr_set_tuner_if_mode(dev, 0);  // SET_TUNER_IF_MODE
@@ -592,6 +634,127 @@ bool Control_Changes()
       }
       clear_flag(changed, CtrlFlags::if_agc_gain);
     }
+  }
+
+  if (last.rtl_impulse_noise_cancellation != nxt.rtl_impulse_noise_cancellation
+    || (changed & CtrlFlags::rtl_impulse_nc) || command_all)
+  {
+    int tmp = nxt.rtl_impulse_noise_cancellation;
+    if (tmp == 0 || tmp == 1)
+    {
+      int prev_on, prev_counter;
+      rtlsdr_get_impulse_nc(dev, &prev_on, &prev_counter);
+      SDRLG(extHw_MSG_DEBUG, "Control_Changes(): rtlsdr_get_impulse_nc() -> %d, %d", prev_on, prev_counter);
+
+      SDRLG(extHw_MSG_DEBUG, "Control_Changes(): rtlsdr_set_impulse_nc(%d)", tmp);
+      int r = rtlsdr_set_impulse_nc(dev, tmp, tmp);
+      if (r)
+        SDRLG(extHw_MSG_ERROR, "Error setting rtlsdr_set_impulse_nc(): %d", r);
+    }
+    last.rtl_impulse_noise_cancellation = tmp;
+    clear_flag(changed, CtrlFlags::rtl_impulse_nc);
+  }
+
+  if (
+    last.rtl_aagc_rf_en != nxt.rtl_aagc_rf_en
+    || last.rtl_aagc_rf_inv != nxt.rtl_aagc_rf_inv
+    || last.rtl_aagc_rf_min != nxt.rtl_aagc_rf_min
+    || last.rtl_aagc_rf_max != nxt.rtl_aagc_rf_max
+    || last.rtl_aagc_if_en != nxt.rtl_aagc_if_en
+    || last.rtl_aagc_if_inv != nxt.rtl_aagc_if_inv
+    || last.rtl_aagc_if_min != nxt.rtl_aagc_if_min
+    || last.rtl_aagc_if_max != nxt.rtl_aagc_if_max
+    || last.rtl_aagc_lg_lock != nxt.rtl_aagc_lg_lock
+    || last.rtl_aagc_lg_unlock != nxt.rtl_aagc_lg_unlock
+    || last.rtl_aagc_lg_ifr != nxt.rtl_aagc_lg_ifr
+    || command_all)
+  {
+    unsigned tRfEn = nxt.rtl_aagc_rf_en;
+    unsigned tRfInv = nxt.rtl_aagc_rf_inv;
+    unsigned tRfMin = nxt.rtl_aagc_rf_min;
+    unsigned tRfMax = nxt.rtl_aagc_rf_max;
+    unsigned tIfEn = nxt.rtl_aagc_if_en;
+    unsigned tIfInv = nxt.rtl_aagc_if_inv;
+    unsigned tIfMin = nxt.rtl_aagc_if_min;
+    unsigned tIfMax = nxt.rtl_aagc_if_max;
+    unsigned tLGLck = nxt.rtl_aagc_lg_lock;
+    unsigned tLGUck = nxt.rtl_aagc_lg_unlock;
+    unsigned tLGIfr = nxt.rtl_aagc_lg_ifr;
+    {
+      int prev_en_rf, prev_inv_rf, prev_rf_min, prev_rf_max;
+      int prev_en_if, prev_inv_if, prev_if_min, prev_if_max;
+      int prev_gain_lock, prev_gain_unlock, prev_gain_interference;
+      rtlsdr_get_aagc(dev,
+        &prev_en_rf, &prev_inv_rf, &prev_rf_min, &prev_rf_max,
+        &prev_en_if, &prev_inv_if, &prev_if_min, &prev_if_max,
+        &prev_gain_lock, &prev_gain_unlock, &prev_gain_interference);
+      SDRLG(extHw_MSG_DEBUG, "Control_Changes(): rtlsdr_get_aagc()\n"
+        "  -> RF: en %d, inv %d, %d - %d\n"
+        "  -> IF: en %d, inv %d, %d - %d\n"
+        "  -> loop: lock %d, unlock %d, interference %d",
+        prev_en_rf, prev_inv_rf, prev_rf_min, prev_rf_max,
+        prev_en_if, prev_inv_if, prev_if_min, prev_if_max,
+        prev_gain_lock, prev_gain_unlock, prev_gain_interference);
+
+      SDRLG(extHw_MSG_DEBUG, "Control_Changes(): rtlsdr_set_aagc(\n"
+        "  RF: en %d, inv %d, %d - %d,\n"
+        "  IF: en %d, inv %d, %d - %d,\n"
+        "  loop gain: lock %d, unlock %d, interference %d )",
+        tRfEn, tRfInv, tRfMin, tRfMax,
+        tIfEn, tIfInv, tIfMin, tIfMax,
+        tLGLck, tLGUck, tLGIfr);
+      int r = rtlsdr_set_aagc(dev,
+        tRfEn, tRfInv, tRfMin, tRfMax,
+        tIfEn, tIfInv, tIfMin, tIfMax,
+        tLGLck, tLGUck, tLGIfr);
+      if (r)
+        SDRLG(extHw_MSG_ERROR, "Error setting rtlsdr_set_aagc(): %d", r);
+    }
+    if (tRfEn < 2)      last.rtl_aagc_rf_en = tRfEn;
+    if (tRfInv < 2)     last.rtl_aagc_rf_inv = tRfInv;
+    if (tRfMin < 256U)  last.rtl_aagc_rf_min = tRfMin;
+    if (tRfMax < 256U)  last.rtl_aagc_rf_max = tRfMax;
+    if (tIfEn < 2)      last.rtl_aagc_if_en = tIfEn;
+    if (tIfInv < 2)     last.rtl_aagc_if_inv = tIfInv;
+    if (tIfMin < 256U)  last.rtl_aagc_if_min = tIfMin;
+    if (tIfMax < 256U)  last.rtl_aagc_if_max = tIfMax;
+    if (tLGLck < 32U)   last.rtl_aagc_lg_lock = tLGLck;
+    if (tLGUck < 32U)   last.rtl_aagc_lg_unlock = tLGUck;
+    if (tLGIfr < 32U)   last.rtl_aagc_lg_ifr  = tLGIfr;
+  }
+
+  if (last.rtl_aagc_vtop[0] != nxt.rtl_aagc_vtop[0]
+    || last.rtl_aagc_vtop[1] != nxt.rtl_aagc_vtop[1]
+    || last.rtl_aagc_vtop[2] != nxt.rtl_aagc_vtop[2]
+    || last.rtl_aagc_krf[0] != nxt.rtl_aagc_krf[0]
+    || last.rtl_aagc_krf[1] != nxt.rtl_aagc_krf[1]
+    || last.rtl_aagc_krf[2] != nxt.rtl_aagc_krf[2]
+    || last.rtl_aagc_krf[3] != nxt.rtl_aagc_krf[3]
+    || command_all)
+  {
+    int vtop[3] = { nxt.rtl_aagc_vtop[0], nxt.rtl_aagc_vtop[1], nxt.rtl_aagc_vtop[2] };
+    int krf[4] = { nxt.rtl_aagc_krf[0], nxt.rtl_aagc_krf[1], nxt.rtl_aagc_krf[2], nxt.rtl_aagc_krf[3] };
+
+    int prev_vtop[3], prev_krf[4];
+    rtlsdr_get_aagc_gain_distrib(dev, prev_vtop, prev_krf);
+    SDRLG(extHw_MSG_DEBUG, "Control_Changes(): rtlsdr_get_agc_gain_distrib() -> vtop[]: %d, %d, %d  krf[]: %d, %d, %d, %d",
+      prev_vtop[0], prev_vtop[1], prev_vtop[2],
+      prev_krf[0], prev_krf[1], prev_krf[2], prev_krf[3]);
+
+    SDRLG(extHw_MSG_DEBUG, "Control_Changes(): rtlsdr_set_agc_gain_distrib(vtop[]: %d, %d, %d  krf[]: %d, %d, %d, %d)",
+      vtop[0], vtop[1], vtop[2],
+      krf[0], krf[1], krf[2], krf[3]);
+      int r = rtlsdr_set_aagc_gain_distrib(dev, vtop, krf);
+      if (r)
+        SDRLG(extHw_MSG_ERROR, "Error setting rtlsdr_set_agc_gain_distrib(): %d", r);
+
+    last.rtl_aagc_vtop[0] = vtop[0];
+    last.rtl_aagc_vtop[1] = vtop[1];
+    last.rtl_aagc_vtop[2] = vtop[2];
+    last.rtl_aagc_krf[0] = krf[0];
+    last.rtl_aagc_krf[1] = krf[1];
+    last.rtl_aagc_krf[2] = krf[2];
+    last.rtl_aagc_krf[3] = krf[3];
   }
 
   return true;
