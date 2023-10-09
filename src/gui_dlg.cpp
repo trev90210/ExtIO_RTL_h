@@ -27,6 +27,7 @@
 #include <commctrl.h>
 #include <process.h>
 #include <tchar.h>
+#include <roapi.h>
 
 #include "gui_dlg.h"
 
@@ -114,9 +115,41 @@ static inline bool isR82XX()
 }
 
 
+#pragma comment(lib, "comctl32.lib")
+#pragma comment(lib, "runtimeobject.lib")
+
+void InitGUIControls()
+{
+  static bool init_ = true;
+  static INITCOMMONCONTROLSEX icex;  //declare an INITCOMMONCONTROLSEX Structure
+  if (init_)
+  {
+    // CoInitialize(NULL);
+
+    // CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+    // CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
+    // CoInitializeEx(NULL, COINIT_MULTITHREADED);
+    // CoInitializeEx(NULL, COINIT_MULTITHREADED | COINIT_DISABLE_OLE1DDE);
+
+    // CoCreateInstance();
+
+    // RoInitialize(RO_INIT_SINGLETHREADED);
+    // RoInitialize(RO_INIT_MULTITHREADED);
+
+    init_ = false;
+
+    icex.dwSize = sizeof(INITCOMMONCONTROLSEX);
+    icex.dwICC = ICC_LISTVIEW_CLASSES | ICC_USEREX_CLASSES;
+    InitCommonControlsEx(&icex);
+    // InitCommonControls();
+  }
+}
+
+
 void CreateGUI()
 {
   h_dlg = CreateDialog(hInst, MAKEINTRESOURCE(IDD_RTL_SETTINGS), NULL, (DLGPROC)MainDlgProc);
+
   if (h_dlg)
   {
     char acMsg[256];
@@ -288,6 +321,9 @@ static void updateTunerBWs(HWND h_dlg)
   bandwidths = tuners::bws[tunerNo].bw;
   n_bandwidths = tuners::bws[tunerNo].num;
 
+  //ComboBox_SetItemHeight(hDlgItmTunerBW, -1, 200);
+  //ComboBox_SetItemHeight(hDlgItmTunerBW, 0, 200);
+
   ComboBox_ResetContent(hDlgItmTunerBW);
   if (n_bandwidths)
     ComboBox_AddString(hDlgItmTunerBW, TEXT("Automatic"));
@@ -296,6 +332,7 @@ static void updateTunerBWs(HWND h_dlg)
     _stprintf_s(str, 255, TEXT("~ %d kHz%s"), bandwidths[i], ((bandwidths[i] * 1000 > rates::MAX) ? " !" : ""));
     ComboBox_AddString(hDlgItmTunerBW, str);
   }
+
   ComboBox_SetCurSel(hDlgItmTunerBW, nearestBwIdx(nxt.tuner_bw));
 }
 
@@ -795,6 +832,12 @@ INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
         int bwIdx = ComboBox_GetCurSel(GET_WM_COMMAND_HWND(wParam, lParam));
         nxt.tuner_bw = bandwidths[bwIdx];
         trigger_control(CtrlFlags::tuner_bandwidth);
+      }
+      else if (GET_WM_COMMAND_CMD(wParam, lParam) == CBN_DROPDOWN)
+      {
+        HWND hDlgItmTunerBW = GetDlgItem(h_dlg, IDC_TUNER_BANDWIDTH);
+        //ComboBox_SetItemHeight(hDlgItmTunerBW, -1, 200);
+        ComboBox_SetItemHeight(hDlgItmTunerBW, 0, 200);
       }
       return TRUE;
 

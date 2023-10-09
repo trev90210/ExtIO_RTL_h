@@ -172,6 +172,8 @@ static int nearestSrateIdx(int srate)
 extern "C"
 bool  LIBRTL_API __stdcall InitHW(char* name, char* model, int& type)
 {
+  //InitGUIControls();
+
   init_toml_config();     // process as early as possible, but that depends on SDR software
 
   const BandAction::Band_Info bi = get_band_info();

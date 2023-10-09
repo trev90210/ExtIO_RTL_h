@@ -11,6 +11,7 @@ extern char band_disp_text[255];
 extern std::atomic_bool update_band_text;
 
 bool is_gui_available();
+void InitGUIControls();
 void CreateGUI();
 void DestroyGUI();
 void gui_show();
