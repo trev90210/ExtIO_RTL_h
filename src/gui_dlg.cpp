@@ -81,8 +81,6 @@ extern std::atomic_bool retune_freq;
 
 int nearestBwIdx(int bw);
 int nearestGainIdx(int gain, const int* gains, const int n_gains);
-int Stop_Thread();
-
 
 static int maxDecimation = 0;
 

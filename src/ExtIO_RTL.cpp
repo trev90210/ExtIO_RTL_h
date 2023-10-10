@@ -112,14 +112,21 @@ static int HDSDR_AGC = 2;
 
 
 // Thread handle
-std::atomic_bool terminateThread = false;
+std::atomic_bool terminate_RX_Thread = false;
+std::atomic_bool terminate_ConnCheck_Thread = false;
 std::atomic_bool ThreadStreamToSDR = false;
 static bool GUIDebugConnection = false;
-static volatile HANDLE thread_handle = INVALID_HANDLE_VALUE;
+static volatile HANDLE RX_thread_handle = INVALID_HANDLE_VALUE;
+static volatile HANDLE ConnCheck_thread_handle = INVALID_HANDLE_VALUE;
 
-void ThreadProc(void* param);
-int Start_Thread();
-int Stop_Thread();
+void RX_ThreadProc(void* param);
+int Start_RX_Thread();
+int Stop_RX_Thread();
+
+void ConnCheck_ThreadProc(void* param);
+int Start_ConnCheck_Thread();
+int Stop_ConnCheck_Thread();
+
 
 /* ExtIO Callback */
 pfnExtIOCallback gpfnExtIOCallbackPtr = NULL;
@@ -240,6 +247,8 @@ bool  LIBRTL_API __stdcall OpenHW()
     return r;
   }
   post_update_gui_init();  // post_update_gui_fields();
+
+  Start_ConnCheck_Thread();
 
   return true;
 }
@@ -444,6 +453,8 @@ int LIBRTL_API __stdcall StartHW(long freq)
   char acMsg[256];
   SDRLG(extHw_MSG_DEBUG, "StartHW() with device handle 0x%p", RtlSdrDev);
 
+  Stop_ConnCheck_Thread();
+
   while (!RtlSdrDev || !is_device_handle_valid())
   {
     if (!RtlSdrDev)
@@ -452,7 +463,7 @@ int LIBRTL_API __stdcall StartHW(long freq)
       SDRLOG(extHw_MSG_ERROR, "StartHW(): failed with invalid device handle");
 
     ThreadStreamToSDR = false;
-    Stop_Thread();
+    Stop_RX_Thread();
     close_rtl_device();
     uint32_t N = retrieve_devices();
     if (N)
@@ -487,7 +498,7 @@ int LIBRTL_API __stdcall StartHW(long freq)
     SDRLOG(extHw_MSG_DEBUG, "StartHW(): using 'other' sample type - NOT PCMU8 or PCM16!");
 
   ThreadStreamToSDR = true;
-  if (Start_Thread() < 0)
+  if (Start_RX_Thread() < 0)
   {
     SDRLOG(extHw_MSG_ERROR, "StartHW(): Error to start streaming thread");
     return -1;
@@ -1258,8 +1269,9 @@ void LIBRTL_API __stdcall StopHW()
 {
   SDRLOG(extHw_MSG_DEBUG, "StopHW()");
   ThreadStreamToSDR = false;
-  Stop_Thread();
+  Stop_RX_Thread();
   EnableGUIControlsAtStop();
+  Start_ConnCheck_Thread();
 }
 
 extern "C"
@@ -1267,7 +1279,7 @@ void LIBRTL_API __stdcall CloseHW()
 {
   SDRLOG(extHw_MSG_DEBUG, "CloseHW()");
   ThreadStreamToSDR = false;
-  Stop_Thread();
+  Stop_RX_Thread();
   close_rtl_device();
   DestroyGUI();
 }
@@ -1323,16 +1335,16 @@ struct CallbackContext
 static CallbackContext cb_ctx;
 
 
-int Start_Thread()
+int Start_RX_Thread()
 {
   //If already running, exit
-  if (thread_handle != INVALID_HANDLE_VALUE)
+  if (RX_thread_handle != INVALID_HANDLE_VALUE)
   {
-    SDRLOG(extHw_MSG_ERROR, "Start_Thread(): Error thread still running!");
+    SDRLOG(extHw_MSG_ERROR, "Start_RX_Thread(): Error thread still running!");
     return 0;   // all fine
   }
 
-  terminateThread = false;
+  terminate_RX_Thread = false;
 
   if (!rcvBufsAllocated)
   {
@@ -1360,27 +1372,27 @@ int Start_Thread()
   // Reset endpoint
   if (rtlsdr_reset_buffer(RtlSdrDev) < 0)
   {
-    SDRLOG(extHw_MSG_ERROR, "Start_Thread(): Error at rtlsdr_reset_buffer()");
+    SDRLOG(extHw_MSG_ERROR, "Start_RX_Thread(): Error at rtlsdr_reset_buffer()");
     return -1;
   }
 
   cb_ctx.reset();
 
   SDRLOG(extHw_MSG_DEBUG, "Starting ASYNC receive thread ..");
-  thread_handle = (HANDLE)_beginthread(ThreadProc, 0, NULL);
-  if (thread_handle == INVALID_HANDLE_VALUE)
+  RX_thread_handle = (HANDLE)_beginthread(RX_ThreadProc, 0, NULL);
+  if (RX_thread_handle == INVALID_HANDLE_VALUE)
   {
-    SDRLOG(extHw_MSG_ERROR, "Start_Thread(): Error at _beginthread()");
+    SDRLOG(extHw_MSG_ERROR, "Start_RX_Thread(): Error at _beginthread()");
     return -1;  // ERROR
   }
 
-  //SetThreadPriority(thread_handle, THREAD_PRIORITY_TIME_CRITICAL);
+  //SetThreadPriority(RX_thread_handle, THREAD_PRIORITY_TIME_CRITICAL);
   return 0;
 }
 
 static void RtlSdrCallback(unsigned char* buf, uint32_t len, void* ctx)
 {
-  if (!buf || !ctx || !gpfnExtIOCallbackPtr || terminateThread.load() || len != buffer_len.load())
+  if (!buf || !ctx || !gpfnExtIOCallbackPtr || terminate_RX_Thread.load() || len != buffer_len.load())
     return;
   CallbackContext& c = *((CallbackContext*)ctx);
 
@@ -1421,24 +1433,24 @@ static void RtlSdrCallback(unsigned char* buf, uint32_t len, void* ctx)
   }
 }
 
-int Stop_Thread()
+int Stop_RX_Thread()
 {
-  terminateThread = true;
+  terminate_RX_Thread = true;
   SDRLOG(extHw_MSG_DEBUG, "Stopping ASYNC receive thread with rtlsdr_cancel_async() ..");
   rtlsdr_cancel_async(RtlSdrDev);
-  if (thread_handle == INVALID_HANDLE_VALUE)
+  if (RX_thread_handle == INVALID_HANDLE_VALUE)
     return 0;
-  WaitForSingleObject(thread_handle, INFINITE);
-  SDRLOG(extHw_MSG_DEBUG, "Stop_Thread(): thread() stopped successfully");
-  thread_handle = INVALID_HANDLE_VALUE;
+  WaitForSingleObject(RX_thread_handle, INFINITE);
+  SDRLOG(extHw_MSG_DEBUG, "Stop_RX_Thread(): thread() stopped successfully");
+  RX_thread_handle = INVALID_HANDLE_VALUE;
   return 0;
 }
 
 
-void ThreadProc(void* p)
+void RX_ThreadProc(void* p)
 {
   char acMsg[256];
-  SDRLG(extHw_MSG_DEBUG, "ThreadProc() with device handle 0x%p", RtlSdrDev);
+  SDRLG(extHw_MSG_DEBUG, "RX_ThreadProc() with device handle 0x%p", RtlSdrDev);
   // Blocks until rtlsdr_cancel_async() is called
   int r = rtlsdr_read_async(
     RtlSdrDev,
@@ -1448,19 +1460,83 @@ void ThreadProc(void* p)
     buffer_len.load()
   );
 
-  thread_handle = INVALID_HANDLE_VALUE;
+  RX_thread_handle = INVALID_HANDLE_VALUE;
 
-  if (terminateThread.load())
-    SDRLOG(extHw_MSG_DEBUG, "ThreadProc(): rtlsdr_read_async() finished. Finishing thread.");
+  if (terminate_RX_Thread.load())
+    SDRLOG(extHw_MSG_DEBUG, "RX_ThreadProc(): rtlsdr_read_async() finished. Finishing thread.");
   else
   {
-    SDRLG(extHw_MSG_WARNING, "ThreadProc(): rtlsdr_read_async() finished unexpected - with %d", r);
+    SDRLG(extHw_MSG_WARNING, "RX_ThreadProc(): rtlsdr_read_async() finished unexpected - with %d", r);
     EXTIO_STATUS_CHANGE(gpfnExtIOCallbackPtr, extHw_Stop);
     close_rtl_device();
   }
 
-  terminateThread = true;
+  terminate_RX_Thread = true;
   SDRLOG(extHw_MSG_DEBUG, "Stopping ASYNC receive thread with rtlsdr_cancel_async() ..");
 
   _endthread();
 }
+
+
+int Start_ConnCheck_Thread()
+{
+  //If already running, exit
+  if (ConnCheck_thread_handle != INVALID_HANDLE_VALUE)
+  {
+    SDRLOG(extHw_MSG_ERROR, "Start_ConnCheck_Thread(): Error thread still running!");
+    return 0;   // all fine
+  }
+
+  terminate_ConnCheck_Thread = false;
+
+  SDRLOG(extHw_MSG_DEBUG, "Starting ConnCheck thread ..");
+  ConnCheck_thread_handle = (HANDLE)_beginthread(ConnCheck_ThreadProc, 0, NULL);
+  if (ConnCheck_thread_handle == INVALID_HANDLE_VALUE)
+  {
+    SDRLOG(extHw_MSG_ERROR, "Start_ConnCheck_Thread(): Error at _beginthread()");
+    return -1;  // ERROR
+  }
+
+  return 0;
+}
+
+
+int Stop_ConnCheck_Thread()
+{
+  terminate_ConnCheck_Thread = true;
+  SDRLOG(extHw_MSG_DEBUG, "Stopping ConnCheck thread  ..");
+  if (ConnCheck_thread_handle == INVALID_HANDLE_VALUE)
+    return 0;
+  WaitForSingleObject(ConnCheck_thread_handle, INFINITE);
+  SDRLOG(extHw_MSG_DEBUG, "Stop_ConnCheck_Thread(): thread() stopped successfully");
+  ConnCheck_thread_handle = INVALID_HANDLE_VALUE;
+  return 0;
+}
+
+void ConnCheck_ThreadProc(void* param)
+{
+  char acMsg[256];
+  SDRLG(extHw_MSG_DEBUG, "ConnCheck_ThreadProc() with device handle 0x%p", RtlSdrDev);
+  int counter = 0;
+
+  while (RtlSdrDev && !terminate_ConnCheck_Thread.load())
+  {
+    Sleep(100);
+    if (terminate_ConnCheck_Thread.load())
+      break;
+    if (++counter <= 5)
+      continue;
+
+    counter = 0;
+    if (!is_device_handle_valid())
+    {
+      SDRLOG(extHw_MSG_ERROR, "ConnCheck_ThreadProc(): device handle got invalid!");
+      close_rtl_device();
+    }
+  }
+
+  ConnCheck_thread_handle = INVALID_HANDLE_VALUE;
+  SDRLOG(extHw_MSG_DEBUG, "ConnCheck_ThreadProc() finished. Finishing thread.");
+  _endthread();
+}
+

@@ -213,9 +213,6 @@ uint32_t retrieve_devices()
 
 bool is_device_handle_valid()
 {
-#define EEPROM_SIZE 256
-  // uint8_t buf[EEPROM_SIZE];
-  RtlDeviceInfo dev_info;
   char acMsg[256];
   if (!RtlSdrDev)
   {
@@ -223,8 +220,7 @@ bool is_device_handle_valid()
     return false;
   }
 
-  //int r = rtlsdr_read_eeprom(RtlSdrDev, buf, 0, EEPROM_SIZE);
-  int r = rtlsdr_get_usb_strings(RtlSdrDev, dev_info.vendor, dev_info.product, dev_info.serial);
+  int r = rtlsdr_is_connected(RtlSdrDev, 100);
   if (r < 0) {
     SDRLG(extHw_MSG_ERROR, "is_device_handle_valid(): handle 0x%p invalid!", RtlSdrDev);
     return false;
@@ -339,10 +335,17 @@ bool Control_Changes()
   if (last.offset_tuning != nxt.offset_tuning || command_all)
   {
     int tmp = nxt.offset_tuning;
-    SDRLOG(extHw_MSG_DEBUG, "Control_Changes(): rtlsdr_set_offset_tuning()");
-    int r = rtlsdr_set_offset_tuning(dev, tmp);
-    if (r < 0)
-      SDRLG(extHw_MSG_WARNING, "Error setting rtlsdr_set_offset_tuning(): %d", r);
+    if (isR82XX())
+    {
+      SDRLOG(extHw_MSG_DEBUG, "Control_Changes(): rtlsdr_set_offset_tuning(): ignored for tuner");
+    }
+    else
+    {
+      SDRLOG(extHw_MSG_DEBUG, "Control_Changes(): rtlsdr_set_offset_tuning()");
+      int r = rtlsdr_set_offset_tuning(dev, tmp);
+      if (r < 0)
+        SDRLG(extHw_MSG_WARNING, "Error setting rtlsdr_set_offset_tuning(): %d", r);
+    }
     last.offset_tuning = tmp;
     clear_flag(changed, CtrlFlags::offset_tuning);
   }
@@ -351,7 +354,9 @@ bool Control_Changes()
     int tmp = nxt.USB_sideband.load() ? 1 : 0;
     // printf("set tuner sideband %d: %s sideband\n", tmp, (tmp ? "upper" : "lower"));
     SDRLOG(extHw_MSG_DEBUG, "Control_Changes(): rtlsdr_set_tuner_sideband()");
-    int r = rtlsdr_set_tuner_sideband(dev, tmp);
+    int r = -1;
+    for (int retry = 0; r < 0 && retry < 3; ++retry)  // retry!?!?!
+      r = rtlsdr_set_tuner_sideband(dev, tmp);
     if (r < 0)
       SDRLG(extHw_MSG_ERROR, "Error setting rtlsdr_set_tuner_sideband(): %d", r);
     else
@@ -388,9 +393,14 @@ bool Control_Changes()
     int tmp = nxt.freq_corr_ppm;
     // printf("set freq correction %d ppm\n", itmp);
     SDRLOG(extHw_MSG_DEBUG, "Control_Changes(): rtlsdr_set_freq_correction()");
-    int r = rtlsdr_set_freq_correction(dev, tmp);
-    if (r < 0)
-      SDRLG(extHw_MSG_WARNING, "Error setting rtlsdr_set_freq_correction(): %d", r);
+    int r = 0;
+    int curr_ppm = rtlsdr_get_freq_correction(dev);
+    if (curr_ppm != tmp)
+    {
+      r = rtlsdr_set_freq_correction(dev, tmp);
+      if (r < 0)
+        SDRLG(extHw_MSG_WARNING, "Error setting rtlsdr_set_freq_correction(): %d", r);
+    }
     last.freq_corr_ppm = tmp;
     clear_flag(changed, CtrlFlags::ppm_correction);
   }
@@ -548,7 +558,11 @@ bool Control_Changes()
     int tmp = nxt.tuner_bw;
     uint32_t applied_bw = 0;  // SET_TUNER_BANDWIDTH
     SDRLOG(extHw_MSG_DEBUG, "Control_Changes(): rtlsdr_set_and_get_tuner_bandwidth()");
-    rtlsdr_set_and_get_tuner_bandwidth(dev, tmp * 1000, &applied_bw, 1 /* =apply_bw */);
+    int r = 1;
+    for (int retry = 0; r && retry < 3; ++retry )  // retry!?!?!
+      r = rtlsdr_set_and_get_tuner_bandwidth(dev, tmp * 1000, &applied_bw, 1 /* =apply_bw */);
+    SDRLG(extHw_MSG_DEBUG, "Control_Changes(): rtlsdr_set_and_get_tuner_bandwidth(%d) -> bw %u, rc %d",
+      tmp * 1000, unsigned(applied_bw), r);
     last.tuner_bw = tmp;
     clear_flag(changed, CtrlFlags::tuner_bandwidth);
   }
