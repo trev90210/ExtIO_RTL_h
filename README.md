@@ -7,7 +7,8 @@ This ExtIO plugin is a wrapper around [**librtlsdr**](https://github.com/hayguen
 
 ### Setup:
 
-Simply put/copy the `ExtIO_RTL.dll` alongside to the SDR executable.
+Simply put/copy the `ExtIO_RTL.dll` alongside to the SDR executable for HDSDR.
+Put/copy the `ExtIO_RTL.dll` into your 'Documents' folder for SDRuno.
 This `dll` is in the `ExtIO_RTL_x32_v....zip` file located at https://github.com/hayguen/ExtIO_RTL/releases, which has to be downloaded and unpacked first.
 
 [Zadig](https://zadig.akeo.ie/), the USB driver has to be installed and configured for the RTL device(s).
@@ -31,6 +32,12 @@ The ExtIO dll is a static build - including librtlsdr. Other DLLs or dependencie
   - it's disabled by default
   - should be self-explanatory with comment lines
 * control Impulse Noise Cancellation function of RTL2832U. this sound very interesting - especially on HF frequencies
+
+
+### Known issue(s)
+
+* the comboboxes' list popup doesn't show up on some SDR programs
+  - use mouse-wheel or cursor up/down keys to select other available entries, e.g. for tuner bandwidth
 
 
 ### History / Source
