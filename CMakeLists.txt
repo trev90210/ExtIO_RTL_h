@@ -20,6 +20,10 @@ endif()
 # allow overriding cmake options with standard variables - from a project including this one
 cmake_policy(SET CMP0077 NEW)  # set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 
+set(RTL_STATIC_BUILD TRUE)
+set(LINK_RTLTOOLS_AGAINST_STATIC_LIB TRUE)
+
+
 set(PTHREADS4W_VERSION 3)
 add_subdirectory(pthread-win32)
 if (TARGET libpthreadVC3)
@@ -41,7 +45,7 @@ endif()
 add_subdirectory(librtlsdr)
 
 
-add_library(ExtIO_RTL SHARED
+add_library(ExtIO_RTL SHARED EXCLUDE_FROM_ALL
     src/control_tcp.cpp
     src/control.h
     src/ExtIO_RTL.cpp
@@ -81,8 +85,33 @@ target_include_directories(ExtIO_RTL PRIVATE
     librtlsdr/include
 )
 
+target_compile_definitions(rtlsdr_static PUBLIC _CRT_SECURE_NO_WARNINGS)
+
 target_link_libraries(ExtIO_RTL PRIVATE
     rtlsdr_static
     libpthreadVC3
     libusb_static
+)
+
+
+set(RTLTOOLS "rtl_sdr;rtl_tcp;rtl_udp;rtl_test;rtl_eeprom;rtl_biast")
+# set(RTLTOOLS "${RTLTOOLS};rtl_fm;rtl_multichannel")
+set(RTLTOOLS "${RTLTOOLS};rtl_ir;rtl_adsb;rtl_power")
+set(RTLTOOLS "${RTLTOOLS};rtl_raw2wav;rtl_wavestat;rtl_wavestream")
+
+# override tools' MSVC_RUNTIME_LIBRARY and define _CRT_SECURE_NO_WARNINGS
+set_property(TARGET convenience_static PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+target_compile_definitions(convenience_static PUBLIC _CRT_SECURE_NO_WARNINGS)
+if(WIN32)
+    set_property(TARGET libgetopt_static PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    target_compile_definitions(libgetopt_static PUBLIC _CRT_SECURE_NO_WARNINGS)
+endif()
+foreach (tool ${RTLTOOLS})
+    set_property(TARGET ${tool} PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    set_target_properties(${tool} PROPERTIES EXCLUDE_FROM_ALL TRUE)
+    target_compile_definitions(${tool} PUBLIC _CRT_SECURE_NO_WARNINGS)
+endforeach()
+
+add_custom_target(rtl_tools
+  DEPENDS ${RTLTOOLS}
 )

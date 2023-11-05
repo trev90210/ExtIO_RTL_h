@@ -60,24 +60,25 @@ jobs:
           cmd.exe /c "call `"C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat`" && set > %temp%\vcvars.txt"
           Get-Content "$env:temp\vcvars.txt" | Foreach-Object { if ($_ -match "^(.*?)=(.*)$") { Set-Content "env:\$($matches[1])" $matches[2] } }
           # run cmake, looks v141_xp Toolset requires VS 2019
-          cmake -G "Visual Studio 16 2019" -A Win32 -S ExtIO_RTL -B build_ExtIO_RTL
+          cmake -G "Visual Studio 16 2019" -A Win32 -S ExtIO_RTL -B build_ExtIO_RTLw32
+          cmake -G "Visual Studio 16 2019" -A x64   -S ExtIO_RTL -B build_ExtIO_RTLx64
 
-    - name: Build
+    - name: Build ExtIO
       working-directory: ${{runner.workspace}}
       shell: bash
-      run: cmake --build build_ExtIO_RTL --config $BUILD_TYPE --target ExtIO_RTL
+      run: cmake --build build_ExtIO_RTLw32 --config $BUILD_TYPE --target ExtIO_RTL
 
-    - name: Collect files to distribute and create ZIP
+    - name: Collect ExtIO files to distribute and create ZIP
       working-directory: ${{runner.workspace}}
       shell: bash
       run: |
         cp "${{runner.workspace}}/ExtIO_RTL/README.md" ./
         cp "${{runner.workspace}}/ExtIO_RTL/COPYING" ./LICENSE
-        cp "${{runner.workspace}}/build_ExtIO_RTL/Release/ExtIO_RTL.dll" ./
+        cp "${{runner.workspace}}/build_ExtIO_RTLw32/Release/ExtIO_RTL.dll" ./
         7z a ExtIO_RTL_x32.zip README.md LICENSE ExtIO_RTL.dll
 
-    - name: Release Asset
-      id: upload-release-asset
+    - name: Release ExtIO Asset
+      id: upload-extio-release-asset
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -90,3 +91,36 @@ jobs:
         asset_name: ExtIO_RTL_x32_${{needs.release_job.outputs.release_version}}.zip
         asset_content_type: application/zip
 
+    - name: Build RTLSDR Tools for Windows
+      working-directory: ${{runner.workspace}}
+      shell: bash
+      run: |
+        cmake --build build_ExtIO_RTLw32 --config $BUILD_TYPE --target rtl_tools
+        cmake --build build_ExtIO_RTLx64 --config $BUILD_TYPE --target rtl_tools
+
+    - name: Collect tool files to distribute and create ZIP
+      working-directory: ${{runner.workspace}}
+      shell: bash
+      run: |
+        mkdir rtlsdr_tools_w32
+        mkdir rtlsdr_tools_x64
+        cp build_ExtIO_RTLw32/librtlsdr/src/Release/rtl_*.exe rtlsdr_tools_w32/
+        cp build_ExtIO_RTLx64/librtlsdr/src/Release/rtl_*.exe rtlsdr_tools_x64/
+        cp ExtIO_RTL/librtlsdr/README.md ./
+        cp ExtIO_RTL/librtlsdr/README_improvements.md ./
+        cp ExtIO_RTL/librtlsdr/README.rtlfm_cmdfile ./
+        ls -lR >files.txt
+        7z a rtlsdr_tools.zip rtlsdr_tools_w32 rtlsdr_tools_x64 files.txt README.md README_improvements.md README.rtlfm_cmdfile
+        # ls -l
+
+    - name: Release rtlsdr tools Asset
+      id: upload-rtlsdr-tools-release-asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{needs.release_job.outputs.upload_url}}
+        asset_path: ${{runner.workspace}}/rtlsdr_tools.zip
+        asset_name: rtlsdr_tools_${{needs.release_job.outputs.release_version}}.zip
+        # asset_name: rtlsdr_tools.zip
+        asset_content_type: application/zip
