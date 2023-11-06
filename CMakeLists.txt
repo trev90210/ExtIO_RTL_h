@@ -95,7 +95,8 @@ target_link_libraries(ExtIO_RTL PRIVATE
 
 
 set(RTLTOOLS "rtl_sdr;rtl_tcp;rtl_udp;rtl_test;rtl_eeprom;rtl_biast")
-# set(RTLTOOLS "${RTLTOOLS};rtl_fm;rtl_multichannel")
+set(RTLTOOLS "${RTLTOOLS};rtl_fm")
+# set(RTLTOOLS "${RTLTOOLS};rtl_multichannel")
 set(RTLTOOLS "${RTLTOOLS};rtl_ir;rtl_adsb;rtl_power")
 set(RTLTOOLS "${RTLTOOLS};rtl_raw2wav;rtl_wavestat;rtl_wavestream")
 
