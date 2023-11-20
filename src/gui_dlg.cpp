@@ -22,11 +22,13 @@
 
 #include "LC_ExtIO_Types.h"
 
+#ifdef HAS_WIN_GUI_DLG
 #include <Windows.h>
 #include <WindowsX.h>
 #include <commctrl.h>
 #include <process.h>
 #include <tchar.h>
+#endif
 
 #include "gui_dlg.h"
 
@@ -98,8 +100,10 @@ static int maxDecimation = 0;
 } while (0)
 
 
+#ifdef HAS_WIN_GUI_DLG
 static INT_PTR CALLBACK MainDlgProc(HWND, UINT, WPARAM, LPARAM);
 static HWND h_dlg = NULL;
+#endif
 
 char band_disp_text[255] = { 0 };
 std::atomic_bool update_band_text = false;
@@ -111,6 +115,8 @@ static inline bool isR82XX()
   return (RTLSDR_TUNER_R820T == t || RTLSDR_TUNER_R828D == t || RTLSDR_TUNER_BLOG_V4 == t);
 }
 
+
+#ifdef HAS_WIN_GUI_DLG
 
 void CreateGUI()
 {
@@ -135,34 +141,47 @@ void DestroyGUI()
     DestroyWindow(h_dlg);
 }
 
+#endif
+
 bool is_gui_available()
 {
+#ifdef HAS_WIN_GUI_DLG
   return (h_dlg) ? true : false;
+#else
+  return false;
+#endif
 }
 
 void post_update_gui_init()
 {
+#ifdef HAS_WIN_GUI_DLG
   if (h_dlg)
     PostMessage(h_dlg, WM_PRINT, (WPARAM)0, (LPARAM)PRF_CLIENT);
+#endif
 }
 
 void post_update_gui_fields()
 {
+#ifdef HAS_WIN_GUI_DLG
   PostMessage(h_dlg, WM_USER + 42, (WPARAM)0, (LPARAM)0);
+#endif
 }
 
 void gui_SetSrate(int srate_idx)
 {
+#ifdef HAS_WIN_GUI_DLG
   if (h_dlg)
   {
     HWND hDlgItmSampRate = GetDlgItem(h_dlg, IDC_SAMPLERATE);
     ComboBox_SetCurSel(hDlgItmSampRate, srate_idx);
   }
+#endif
 }
 
 
 void gui_SetAttenuator(int atten_idx)
 {
+#ifdef HAS_WIN_GUI_DLG
   int pos = rf_gains[atten_idx];
   if (h_dlg)
   {
@@ -177,11 +196,13 @@ void gui_SetAttenuator(int atten_idx)
       Static_SetText(hRFGainLabel, str);
     }
   }
+#endif
 }
 
 
 void gui_SetMGC(int mgc_idx)
 {
+#ifdef HAS_WIN_GUI_DLG
   int pos = if_gains[mgc_idx];
 
   if (h_dlg && isR82XX())
@@ -197,12 +218,14 @@ void gui_SetMGC(int mgc_idx)
       Static_SetText(hIFGainLabel, str);
     }
   }
+#endif
 }
 
 
 
 void DisableGUIControlsAtStart()
 {
+#ifdef HAS_WIN_GUI_DLG
   if (h_dlg)
   {
     BOOL en = ThreadStreamToSDR.load() ? FALSE : TRUE;
@@ -213,6 +236,7 @@ void DisableGUIControlsAtStart()
     EnableWindow(hDlgItmSampMode, en);
     EnableWindow(hDlgItmBuffer, en);
   }
+#endif
 }
 
 void EnableGUIControlsAtStop()
@@ -222,25 +246,30 @@ void EnableGUIControlsAtStop()
 
 
 extern "C"
-void LIBRTL_API __stdcall ShowGUI()
+void LIBRTL_API EXTIO_CALL ShowGUI()
 {
+#ifdef HAS_WIN_GUI_DLG
   if (h_dlg)
   {
     ShowWindow(h_dlg, SW_SHOW);
     SetForegroundWindow(h_dlg);
   }
+#endif
 }
 
 extern "C"
-void LIBRTL_API  __stdcall HideGUI()
+void LIBRTL_API  EXTIO_CALL HideGUI()
 {
+#ifdef HAS_WIN_GUI_DLG
   if (h_dlg)
     ShowWindow(h_dlg, SW_HIDE);
+#endif
 }
 
 extern "C"
-void LIBRTL_API  __stdcall SwitchGUI()
+void LIBRTL_API  EXTIO_CALL SwitchGUI()
 {
+#ifdef HAS_WIN_GUI_DLG
   if (h_dlg)
   {
     if (IsWindowVisible(h_dlg))
@@ -248,6 +277,7 @@ void LIBRTL_API  __stdcall SwitchGUI()
     else
       ShowWindow(h_dlg, SW_SHOW);
   }
+#endif
 }
 
 void gui_show()
@@ -258,6 +288,7 @@ void gui_show()
 
 void gui_show_missing_device(int from)  // 0 == OpenHW(), 1 == StartHW()
 {
+#ifdef HAS_WIN_GUI_DLG
   static bool shown_openhw_err = false;
 
   if (!shown_openhw_err)
@@ -269,14 +300,20 @@ void gui_show_missing_device(int from)  // 0 == OpenHW(), 1 == StartHW()
 
   if (from == 1 && h_dlg && !IsWindowVisible(h_dlg))
     ::MessageBoxA(NULL, "No compatible RTL-SDR device found!", "Error", 0);
+#endif
 }
+
 
 void gui_show_invalid_device()
 {
+#ifdef HAS_WIN_GUI_DLG
   ::MessageBoxA(NULL, "Device invalid. Select new RTL-SDR device!", "Error", 0);
   return;
+#endif
 }
 
+
+#ifdef HAS_WIN_GUI_DLG
 
 static void updateTunerBWs(HWND h_dlg)
 {
@@ -958,3 +995,4 @@ INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
   return FALSE;
 }
 
+#endif

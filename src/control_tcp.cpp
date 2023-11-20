@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <assert.h>
+#include <cmath>
 
 
 #ifdef _MSC_VER
@@ -109,7 +110,7 @@ int nearestBwIdx(int bw)
   int nearest_dist = 10000000;
   for (int idx = 1; idx < n_bandwidths; ++idx)
   {
-    int dist = abs(bw - bandwidths[idx]);
+    int dist = std::abs(bw - bandwidths[idx]);
     if (dist < nearest_dist)
     {
       nearest_idx = idx;

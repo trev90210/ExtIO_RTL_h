@@ -37,11 +37,13 @@
 #include <atomic>
 #include <stdint.h>
 #include <stdio.h>
+
+#ifdef HAS_WIN_GUI_DLG
 #include <process.h>
 #include <tchar.h>
+#endif
 
 #include <new>
-
 
 #define ALWAYS_PCMU8  1
 #define ALWAYS_PCM16  0
@@ -66,8 +68,8 @@ int VAR_ALWAYS_PCM16 = ALWAYS_PCM16;
 #endif
 
 
-extern "C" int  LIBRTL_API __stdcall SetAttenuator(int atten_idx);
-extern "C" int  LIBRTL_API __stdcall ExtIoSetMGC(int mgc_idx);
+extern "C" int  LIBRTL_API EXTIO_CALL SetAttenuator(int atten_idx);
+extern "C" int  LIBRTL_API EXTIO_CALL ExtIoSetMGC(int mgc_idx);
 
 
 
@@ -177,7 +179,7 @@ static int nearestSrateIdx(int srate)
 
 
 extern "C"
-bool  LIBRTL_API __stdcall InitHW(char* name, char* model, int& type)
+bool  LIBRTL_API EXTIO_CALL InitHW(char* name, char* model, int& type)
 {
   init_toml_config();     // process as early as possible, but that depends on SDR software
 
@@ -223,14 +225,14 @@ bool  LIBRTL_API __stdcall InitHW(char* name, char* model, int& type)
 }
 
 extern "C"
-int LIBRTL_API __stdcall GetStatus()
+int LIBRTL_API EXTIO_CALL GetStatus()
 {
   /* dummy function */
   return 0;
 }
 
 extern "C"
-bool  LIBRTL_API __stdcall OpenHW()
+bool  LIBRTL_API EXTIO_CALL OpenHW()
 {
   SDRLOG(extHw_MSG_DEBUG, "OpenHW()");
   CreateGUI();
@@ -401,7 +403,7 @@ static CtrlFlagT _setHwLO_check_bands(int64_t freq)
 
 
 extern "C"
-long LIBRTL_API __stdcall SetHWLO(long freq)
+long LIBRTL_API EXTIO_CALL SetHWLO(long freq)
 {
   CtrlFlagT change_flags = _setHwLO_check_bands(freq);
   nxt.LO_freq.store(freq); // +nxt.band_center_LO_delta;
@@ -412,7 +414,7 @@ long LIBRTL_API __stdcall SetHWLO(long freq)
 
 
 extern "C"
-int64_t LIBRTL_API __stdcall SetHWLO64(int64_t freq)
+int64_t LIBRTL_API EXTIO_CALL SetHWLO64(int64_t freq)
 {
   CtrlFlagT change_flags = _setHwLO_check_bands(freq);
   nxt.LO_freq.store(freq); // +nxt.band_center_LO_delta;
@@ -423,32 +425,32 @@ int64_t LIBRTL_API __stdcall SetHWLO64(int64_t freq)
 
 
 extern "C"
-void LIBRTL_API __stdcall TuneChanged64(int64_t tunefreq)
+void LIBRTL_API EXTIO_CALL TuneChanged64(int64_t tunefreq)
 {
   nxt.tune_freq = tunefreq;
 }
 
 extern "C"
-void LIBRTL_API __stdcall TuneChanged(long tunefreq)
+void LIBRTL_API EXTIO_CALL TuneChanged(long tunefreq)
 {
   nxt.tune_freq = tunefreq;
 }
 
 extern "C"
-int64_t LIBRTL_API __stdcall GetTune64(void)
+int64_t LIBRTL_API EXTIO_CALL GetTune64(void)
 {
   return nxt.tune_freq;
 }
 
 extern "C"
-long LIBRTL_API __stdcall GetTune(void)
+long LIBRTL_API EXTIO_CALL GetTune(void)
 {
   return (long)(nxt.tune_freq);
 }
 
 
 extern "C"
-int LIBRTL_API __stdcall StartHW(long freq)
+int LIBRTL_API EXTIO_CALL StartHW(long freq)
 {
   char acMsg[256];
   SDRLG(extHw_MSG_DEBUG, "StartHW() with device handle 0x%p", RtlSdrDev);
@@ -522,20 +524,20 @@ int LIBRTL_API __stdcall StartHW(long freq)
 
 
 extern "C"
-int64_t LIBRTL_API __stdcall GetHWLO64()
+int64_t LIBRTL_API EXTIO_CALL GetHWLO64()
 {
   return nxt.LO_freq;
 }
 
 extern "C"
-long LIBRTL_API __stdcall GetHWLO()
+long LIBRTL_API EXTIO_CALL GetHWLO()
 {
   return (long)nxt.LO_freq;
 }
 
 
 extern "C"
-long LIBRTL_API __stdcall GetHWSR()
+long LIBRTL_API EXTIO_CALL GetHWSR()
 {
   long sr = long(rates::tab[nxt.srate_idx].valueInt);
 #if ( FULL_DECIMATION )
@@ -545,7 +547,7 @@ long LIBRTL_API __stdcall GetHWSR()
 }
 
 extern "C"
-int LIBRTL_API __stdcall ExtIoGetSrates(int srate_idx, double* samplerate)
+int LIBRTL_API EXTIO_CALL ExtIoGetSrates(int srate_idx, double* samplerate)
 {
   if (srate_idx < rates::N)
   {
@@ -560,7 +562,7 @@ int LIBRTL_API __stdcall ExtIoGetSrates(int srate_idx, double* samplerate)
 }
 
 extern "C"
-long LIBRTL_API __stdcall ExtIoGetBandwidth(int srate_idx)
+long LIBRTL_API EXTIO_CALL ExtIoGetBandwidth(int srate_idx)
 {
   if (srate_idx < rates::N)
   {
@@ -574,13 +576,13 @@ long LIBRTL_API __stdcall ExtIoGetBandwidth(int srate_idx)
 }
 
 extern "C"
-int  LIBRTL_API __stdcall ExtIoGetActualSrateIdx(void)
+int  LIBRTL_API EXTIO_CALL ExtIoGetActualSrateIdx(void)
 {
   return nxt.srate_idx;
 }
 
 extern "C"
-int  LIBRTL_API __stdcall ExtIoSetSrate(int srate_idx)
+int  LIBRTL_API EXTIO_CALL ExtIoSetSrate(int srate_idx)
 {
   if (srate_idx >= 0 && srate_idx < rates::N)
   {
@@ -595,7 +597,7 @@ int  LIBRTL_API __stdcall ExtIoSetSrate(int srate_idx)
 }
 
 extern "C"
-int  LIBRTL_API __stdcall GetAttenuators(int atten_idx, float* attenuation)
+int  LIBRTL_API EXTIO_CALL GetAttenuators(int atten_idx, float* attenuation)
 {
   if (atten_idx < n_rf_gains)
   {
@@ -606,7 +608,7 @@ int  LIBRTL_API __stdcall GetAttenuators(int atten_idx, float* attenuation)
 }
 
 extern "C"
-int  LIBRTL_API __stdcall GetActualAttIdx(void)
+int  LIBRTL_API EXTIO_CALL GetActualAttIdx(void)
 {
   for (int i = 0; i < n_rf_gains; i++)
     if (nxt.rf_gain == rf_gains[i])
@@ -615,7 +617,7 @@ int  LIBRTL_API __stdcall GetActualAttIdx(void)
 }
 
 extern "C"
-int  LIBRTL_API __stdcall SetAttenuator(int atten_idx)
+int  LIBRTL_API EXTIO_CALL SetAttenuator(int atten_idx)
 {
   if (atten_idx<0 || atten_idx > n_rf_gains)
     return -1;
@@ -630,7 +632,7 @@ int  LIBRTL_API __stdcall SetAttenuator(int atten_idx)
 
 
 extern "C"
-int  LIBRTL_API __stdcall ExtIoGetMGCs(int mgc_idx, float* gain)
+int  LIBRTL_API EXTIO_CALL ExtIoGetMGCs(int mgc_idx, float* gain)
 {
   if (mgc_idx < n_if_gains)
   {
@@ -641,7 +643,7 @@ int  LIBRTL_API __stdcall ExtIoGetMGCs(int mgc_idx, float* gain)
 }
 
 extern "C"
-int  LIBRTL_API __stdcall ExtIoGetActualMgcIdx(void)
+int  LIBRTL_API EXTIO_CALL ExtIoGetActualMgcIdx(void)
 {
   for (int i = 0; i < n_if_gains; i++)
     if (nxt.if_gain_val == if_gains[i])
@@ -650,7 +652,7 @@ int  LIBRTL_API __stdcall ExtIoGetActualMgcIdx(void)
 }
 
 extern "C"
-int  LIBRTL_API __stdcall ExtIoSetMGC(int mgc_idx)
+int  LIBRTL_API EXTIO_CALL ExtIoSetMGC(int mgc_idx)
 {
   if (mgc_idx<0 || mgc_idx > n_if_gains)
     return -1;
@@ -668,7 +670,7 @@ int  LIBRTL_API __stdcall ExtIoSetMGC(int mgc_idx)
 #if WITH_AGCS
 
 extern "C"
-int   LIBRTL_API __stdcall ExtIoGetAGCs(int agc_idx, char* text)
+int   LIBRTL_API EXTIO_CALL ExtIoGetAGCs(int agc_idx, char* text)
 {
   switch (agc_idx)
   {
@@ -681,13 +683,13 @@ int   LIBRTL_API __stdcall ExtIoGetAGCs(int agc_idx, char* text)
 }
 
 extern "C"
-int   LIBRTL_API __stdcall ExtIoGetActualAGCidx(void)
+int   LIBRTL_API EXTIO_CALL ExtIoGetActualAGCidx(void)
 {
   return HDSDR_AGC;
 }
 
 extern "C"
-int   LIBRTL_API __stdcall ExtIoSetAGC(int agc_idx)
+int   LIBRTL_API EXTIO_CALL ExtIoSetAGC(int agc_idx)
 {
   WPARAM RF_val = BST_UNCHECKED; // BST_CHECKED;
   WPARAM IF_val = BST_UNCHECKED; // BST_CHECKED;
@@ -707,7 +709,7 @@ int   LIBRTL_API __stdcall ExtIoSetAGC(int agc_idx)
 }
 
 extern "C"
-int   LIBRTL_API __stdcall ExtIoShowMGC(int agc_idx)
+int   LIBRTL_API EXTIO_CALL ExtIoShowMGC(int agc_idx)
 {
   // return 1 - shows MGC == IF slider
   switch (agc_idx)
@@ -795,7 +797,7 @@ enum class Setting {
 
 
 extern "C"
-int   LIBRTL_API __stdcall ExtIoGetSetting(int idx, char* description, char* value)
+int   LIBRTL_API EXTIO_CALL ExtIoGetSetting(int idx, char* description, char* value)
 {
   int atm_tmp_pin, atm_tmp_inv, atm_tmp_en;
   int atm_tmp_i;
@@ -1053,7 +1055,7 @@ int   LIBRTL_API __stdcall ExtIoGetSetting(int idx, char* description, char* val
 }
 
 extern "C"
-void  LIBRTL_API __stdcall ExtIoSetSetting(int idx, const char* value)
+void  LIBRTL_API EXTIO_CALL ExtIoSetSetting(int idx, const char* value)
 {
   static bool bCompatibleSettings = true;  // initial assumption
   int tempInt;
@@ -1265,7 +1267,7 @@ void  LIBRTL_API __stdcall ExtIoSetSetting(int idx, const char* value)
 
 
 extern "C"
-void LIBRTL_API __stdcall StopHW()
+void LIBRTL_API EXTIO_CALL StopHW()
 {
   SDRLOG(extHw_MSG_DEBUG, "StopHW()");
   ThreadStreamToSDR = false;
@@ -1275,7 +1277,7 @@ void LIBRTL_API __stdcall StopHW()
 }
 
 extern "C"
-void LIBRTL_API __stdcall CloseHW()
+void LIBRTL_API EXTIO_CALL CloseHW()
 {
   SDRLOG(extHw_MSG_DEBUG, "CloseHW()");
   ThreadStreamToSDR = false;
@@ -1286,13 +1288,13 @@ void LIBRTL_API __stdcall CloseHW()
 
 
 extern "C"
-void LIBRTL_API __stdcall SetCallback(pfnExtIOCallback funcptr)
+void LIBRTL_API EXTIO_CALL SetCallback(pfnExtIOCallback funcptr)
 {
   gpfnExtIOCallbackPtr = funcptr;
 }
 
 extern "C"
-void LIBRTL_API  __stdcall VersionInfo(const char* progname, int ver_major, int ver_minor)
+void LIBRTL_API  EXTIO_CALL VersionInfo(const char* progname, int ver_major, int ver_minor)
 {
   if (!strcmp(progname, "HDSDR")
     && (ver_major >= 3 || (ver_major == 2 && ver_minor > 70)))
@@ -1303,7 +1305,7 @@ void LIBRTL_API  __stdcall VersionInfo(const char* progname, int ver_major, int 
 }
 
 extern "C"
-void LIBRTL_API  __stdcall ExtIoSDRInfo(int extSDRInfo, int additionalValue, void* additionalPtr)
+void LIBRTL_API  EXTIO_CALL ExtIoSDRInfo(int extSDRInfo, int additionalValue, void* additionalPtr)
 {
   init_toml_config();     // process as early as possible, but that depends on SDR software
 

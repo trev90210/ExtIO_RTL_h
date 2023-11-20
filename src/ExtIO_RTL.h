@@ -5,9 +5,23 @@
 // LIBRTL_API functions as being imported from a DLL, whereas this DLL sees symbols
 // defined with this macro as being exported.
 #ifdef LIBRTL_EXPORTS
+
+#ifdef WIN32
 #define LIBRTL_API __declspec(dllexport)
 #else
-#define LIBRTL_API __declspec(dllimport)
+#define LIBRTL_API
 #endif
 
+#else
+
+#ifdef WIN32
+#define LIBRTL_API __declspec(dllimport)
+#else
+#define LIBRTL_API
+#endif
+
+#endif
+
+#ifdef WIN32
 extern HMODULE hInst;
+#endif

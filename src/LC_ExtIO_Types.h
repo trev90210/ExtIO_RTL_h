@@ -70,15 +70,23 @@
  *
  */
 
+
+#ifdef _MSC_VER
+#define EXTIO_CALL  __stdcall
+#else
+#define EXTIO_CALL
+#endif
+
+
 // function implemented by Winrad / HDSDR; see enum extHWstatusT below
 // IQoffs is no longer used (HDSDR >= 2.75), if ever used by any ExtIO!
 // DC offset correction can be done inside HDSDR
-typedef int     (* pfnExtIOCallback)  (int cnt, int status, float IQoffs, void *IQdata);
+typedef int     (* pfnExtIOCallback)  (int cnt, int status, float IQoffs, const void *IQdata);
 
 // mandatory functions, which have to be implemented by ExtIO DLL
 #define EXTIO_MAX_NAME_LEN    16    /* name is displayed in Winrad/HDSDR's menu */
 #define EXTIO_MAX_MODEL_LEN   16    /* model is not used */
-typedef bool    (__stdcall * pfnInitHW)         (char *name, char *model, int& hwtype);
+typedef bool    (EXTIO_CALL * pfnInitHW)         (char *name, char *model, int& hwtype);
                 // name: descriptive name of the hardware.
                 //     Preferably not longer than about 16 characters,
                 //     as it will be used in a Winrad menu
@@ -89,11 +97,11 @@ typedef bool    (__stdcall * pfnInitHW)         (char *name, char *model, int& h
                 // hwtype: see enum extHWtypeT below
                 // return: true if everything went well
 
-typedef bool    (__stdcall * pfnOpenHW)         (void);
+typedef bool    (EXTIO_CALL * pfnOpenHW)         (void);
                 // return: true if everything went well
 
-typedef void    (__stdcall * pfnCloseHW)        (void);
-typedef int     (__stdcall * pfnStartHW)        (long extLOfreq);
+typedef void    (EXTIO_CALL * pfnCloseHW)        (void);
+typedef int     (EXTIO_CALL * pfnStartHW)        (long extLOfreq);
                 // return: An integer specifying how many I/Q pairs are returned
                 //     by the DLL each time the callback function is invoked (see later).
                 //     This information is used of course only when the input data
@@ -104,9 +112,9 @@ typedef int     (__stdcall * pfnStartHW)        (long extLOfreq);
                 //     The number of I/Q pairs must be at least 512, or an integer
                 //     multiple of that value,
 
-typedef void    (__stdcall * pfnStopHW)         (void);
-typedef void    (__stdcall * pfnSetCallback)    (pfnExtIOCallback funcptr);
-typedef int     (__stdcall * pfnSetHWLO)        (long extLOfreq);   // see also SetHWLO64
+typedef void    (EXTIO_CALL * pfnStopHW)         (void);
+typedef void    (EXTIO_CALL * pfnSetCallback)    (pfnExtIOCallback funcptr);
+typedef int     (EXTIO_CALL * pfnSetHWLO)        (long extLOfreq);   // see also SetHWLO64
                 // return values:
                 //     == 0: The function did complete without errors.
                 //     < 0 (a negative number N):
@@ -118,7 +126,7 @@ typedef int     (__stdcall * pfnSetHWLO)        (long extLOfreq);   // see also 
                 //           that the hardware is capable to generate. The value
                 //           of N indicates what is the maximum supported by the HW.
 
-typedef int     (__stdcall * pfnGetStatus)      (void);
+typedef int     (EXTIO_CALL * pfnGetStatus)      (void);
                 //     This entry point is meant to allow the DLL to return a status
                 //     information to Winrad, upon request.
                 //     Presently it is never called by Winrad, though its existence
@@ -132,38 +140,38 @@ typedef int     (__stdcall * pfnGetStatus)      (void);
 // optional functions, which can be implemented by ExtIO DLL
 // for performance reasons prefer not implementing rather then implementing empty functions
 //   especially for RawDataReady
-typedef long    (__stdcall * pfnGetHWLO)        (void);             // see also GetHWLO64
-typedef long    (__stdcall * pfnGetHWSR)        (void);
-typedef void    (__stdcall * pfnRawDataReady)   (long samprate, void *Ldata, void *Rdata, int numsamples);
-typedef void    (__stdcall * pfnShowGUI)        (void);
-typedef void    (__stdcall * pfnHideGUI)        (void);
-typedef void    (__stdcall * pfnSwitchGUI)      (void);             // new: switch visibility of GUI
-typedef void    (__stdcall * pfnTuneChanged)    (long tunefreq);    // see also TuneChanged64
-typedef long    (__stdcall * pfnGetTune)        (void);             // see also GetTune64
-typedef void    (__stdcall * pfnModeChanged)    (char mode);
-typedef char    (__stdcall * pfnGetMode)        (void);
-typedef void    (__stdcall * pfnIFLimitsChanged)(long lowfreq, long highfreq);  // see also IFLimitsChanged64
-typedef void    (__stdcall * pfnFiltersChanged) (int loCut, int hiCut, int pitch);  // lo/hiCut relative to tuneFreq
-typedef void    (__stdcall * pfnMuteChanged)    (bool muted);
-typedef void    (__stdcall * pfnGetFilters)     (int& loCut, int& hiCut, int& pitch);
+typedef long    (EXTIO_CALL * pfnGetHWLO)        (void);             // see also GetHWLO64
+typedef long    (EXTIO_CALL * pfnGetHWSR)        (void);
+typedef void    (EXTIO_CALL * pfnRawDataReady)   (long samprate, void *Ldata, void *Rdata, int numsamples);
+typedef void    (EXTIO_CALL * pfnShowGUI)        (void);
+typedef void    (EXTIO_CALL * pfnHideGUI)        (void);
+typedef void    (EXTIO_CALL * pfnSwitchGUI)      (void);             // new: switch visibility of GUI
+typedef void    (EXTIO_CALL * pfnTuneChanged)    (long tunefreq);    // see also TuneChanged64
+typedef long    (EXTIO_CALL * pfnGetTune)        (void);             // see also GetTune64
+typedef void    (EXTIO_CALL * pfnModeChanged)    (char mode);
+typedef char    (EXTIO_CALL * pfnGetMode)        (void);
+typedef void    (EXTIO_CALL * pfnIFLimitsChanged)(long lowfreq, long highfreq);  // see also IFLimitsChanged64
+typedef void    (EXTIO_CALL * pfnFiltersChanged) (int loCut, int hiCut, int pitch);  // lo/hiCut relative to tuneFreq
+typedef void    (EXTIO_CALL * pfnMuteChanged)    (bool muted);
+typedef void    (EXTIO_CALL * pfnGetFilters)     (int& loCut, int& hiCut, int& pitch);
 
 // optional functions - extended for receivers with frequency range over 2147 MHz - used from HDSDR
 // these functions 64 bit functions are prefered rather than using the 32 bit ones
 // for other Winrad derivations you should additionally implement the above "usual" 32 bit functions
-typedef int     (__stdcall * pfnStartHW64)      (int64_t extLOfreq);    // "StartHW64" with HDSDR >= 2.14
-typedef int64_t (__stdcall * pfnSetHWLO64)      (int64_t extLOfreq);
-typedef int64_t (__stdcall * pfnGetHWLO64)      (void);
-typedef void    (__stdcall * pfnTuneChanged64)  (int64_t tunefreq);
-typedef int64_t (__stdcall * pfnGetTune64)      (void);
-typedef void    (__stdcall * pfnIFLimitsChanged64)  (int64_t lowfreq, int64_t highfreq);
+typedef int     (EXTIO_CALL * pfnStartHW64)      (int64_t extLOfreq);    // "StartHW64" with HDSDR >= 2.14
+typedef int64_t (EXTIO_CALL * pfnSetHWLO64)      (int64_t extLOfreq);
+typedef int64_t (EXTIO_CALL * pfnGetHWLO64)      (void);
+typedef void    (EXTIO_CALL * pfnTuneChanged64)  (int64_t tunefreq);
+typedef int64_t (EXTIO_CALL * pfnGetTune64)      (void);
+typedef void    (EXTIO_CALL * pfnIFLimitsChanged64)  (int64_t lowfreq, int64_t highfreq);
 
 // optional functions - extended for high precision
-typedef int     (__stdcall * pfnStartHW_dbl)    (double extLOfreq);
-typedef double  (__stdcall * pfnSetHWLO_dbl)    (double extLOfreq);
-typedef double  (__stdcall * pfnGetHWLO_dbl)    (void);
-typedef void    (__stdcall * pfnTuneChanged_dbl)(double tunefreq);
-typedef double  (__stdcall * pfnGetTune_dbl)    (void);
-typedef void    (__stdcall * pfnIFLimitsChanged_dbl)  (double lowfreq, double highfreq);
+typedef int     (EXTIO_CALL * pfnStartHW_dbl)    (double extLOfreq);
+typedef double  (EXTIO_CALL * pfnSetHWLO_dbl)    (double extLOfreq);
+typedef double  (EXTIO_CALL * pfnGetHWLO_dbl)    (void);
+typedef void    (EXTIO_CALL * pfnTuneChanged_dbl)(double tunefreq);
+typedef double  (EXTIO_CALL * pfnGetTune_dbl)    (void);
+typedef void    (EXTIO_CALL * pfnIFLimitsChanged_dbl)  (double lowfreq, double highfreq);
 
 
 // optional functions, which can be implemented by ExtIO DLL
@@ -173,23 +181,23 @@ typedef void    (__stdcall * pfnIFLimitsChanged_dbl)  (double lowfreq, double hi
 // with this information an ExtIO may check which extHWstatusT enums are properly processed from application
 // this call shall no longer be used to determine features of the SDR
 //   use "ExtIoSDRInfo" for this purpose
-typedef void    (__stdcall * pfnVersionInfo)    (const char * progname, int ver_major, int ver_minor);
+typedef void    (EXTIO_CALL * pfnVersionInfo)    (const char * progname, int ver_major, int ver_minor);
 
 
 // "GetAttenuators" allows HDSDR to display a knob or slider for Attenuation / Amplification
 // see & use extHw_Changed_ATT enum if ATT can get changed by ExtIO dialog window or from hardware
 #define EXTIO_MAX_ATT_GAIN_VALUES 128
-typedef int     (__stdcall * pfnGetAttenuators) (int idx, float * attenuation);  // fill in attenuation
+typedef int     (EXTIO_CALL * pfnGetAttenuators) (int idx, float * attenuation);  // fill in attenuation
                              // use positive attenuation levels if signal is amplified (LNA)
                              // use negative attenuation levels if signal is attenuated
                              // sort by attenuation: use idx 0 for highest attenuation / most damping
                              // this functions is called with incrementing idx
                              //    - until this functions returns != 0, which means that all attens are already delivered
-typedef int     (__stdcall * pfnGetActualAttIdx)(void);                          // returns -1 on error
-typedef int     (__stdcall * pfnSetAttenuator)  (int idx);                       // returns != 0 on error
+typedef int     (EXTIO_CALL * pfnGetActualAttIdx)(void);                          // returns -1 on error
+typedef int     (EXTIO_CALL * pfnSetAttenuator)  (int idx);                       // returns != 0 on error
 
 // see extHw_TX_Request/extHw_RX_Request enums below if modechange can get triggered from user / hardware
-typedef int     (__stdcall * pfnSetModeRxTx)    (int modeRxTx);             // see enum extHw_ModeRxTxT
+typedef int     (EXTIO_CALL * pfnSetModeRxTx)    (int modeRxTx);             // see enum extHw_ModeRxTxT
 
 // preliminary TX function - not really tested!: lack of test hw
 // status:
@@ -197,13 +205,13 @@ typedef int     (__stdcall * pfnSetModeRxTx)    (int modeRxTx);             // s
 // 1: Reset (to suspend/stop TX thread of HDSDR) with numIQsamples == 0 and interleavedIQ == NULL
 // 2: Pause/Stop (buffer underrun) with numIQsamples == 0 and interleavedIQ == NULL
 // 3: Continue (after buffer underrun) with numIQsamples == 0 and interleavedIQ == NULL
-typedef void    (__stdcall * pfnTxSamples)      (int status, int numIQsamples, const short * interleavedIQ);
+typedef void    (EXTIO_CALL * pfnTxSamples)      (int status, int numIQsamples, const short * interleavedIQ);
 
 
 // (de)activate all bandpass filter to allow "bandpass undersampling" (with external analog bandpass filter)
 // intended for future use: it may get set automatically depending on LO frequency and the "ExtIO Frequency Options"
 //   deactivation of bp/lp-filters when real LO (in HDSDR) is > ADC_Samplerate/2 in undersampling mode
-typedef int     (__stdcall * pfnDeactivateBP)   (int deactivate);
+typedef int     (EXTIO_CALL * pfnDeactivateBP)   (int deactivate);
                              // deactivate == 1 to deactivate all bandpass and lowpass filters of hardware
                              // deactivate == 0 to reactivate automatic bandpass selection depending on frequency
 
@@ -212,38 +220,38 @@ typedef int     (__stdcall * pfnDeactivateBP)   (int deactivate);
 // see & use extHw_Changed_SampleRate enum ... and "GetHWSR". Enumeration API as with "GetAttenuators"
 // intended for future use - actually not implemented/called
 #define EXTIO_MAX_SRATE_VALUES  32
-typedef int     (__stdcall * pfnExtIoGetSrates) (int idx, double * samplerate);  // fill in possible samplerates
+typedef int     (EXTIO_CALL * pfnExtIoGetSrates) (int idx, double * samplerate);  // fill in possible samplerates
                              // this functions is called with incrementing idx
                              //    - until this functions returns != 0, which means that all srates are already delivered
-typedef int     (__stdcall * pfnExtIoGetActualSrateIdx) (void);               // returns -1 on error
-typedef int     (__stdcall * pfnExtIoSetSrate)  (int idx);                    // returns != 0 on error
+typedef int     (EXTIO_CALL * pfnExtIoGetActualSrateIdx) (void);               // returns -1 on error
+typedef int     (EXTIO_CALL * pfnExtIoSetSrate)  (int idx);                    // returns != 0 on error
 
 // optional function to get 3dB bandwidth from samplerate
-typedef long    (__stdcall * pfnExtIoGetBandwidth)  (int srate_idx);       // returns <= 0 on error
+typedef long    (EXTIO_CALL * pfnExtIoGetBandwidth)  (int srate_idx);       // returns <= 0 on error
 
 // optional function to get center (= IF frequency) of 3dB band in Hz - for non I/Q receivers with 0 center
-typedef long    (__stdcall * pfnExtIoGetBwCenter)   (int srate_idx);       // returns 0 on error, which is default
+typedef long    (EXTIO_CALL * pfnExtIoGetBwCenter)   (int srate_idx);       // returns 0 on error, which is default
 
 // optional function to get AGC Mode: AGC_OFF (always agc_index = 0), AGC_SLOW, AGC_MEDIUM, AGC_FAST, ...
 // this functions is called with incrementing idx
 //    - until this functions returns != 0, which means that all agc modes are already delivered
 #define EXTIO_MAX_AGC_VALUES  16
-typedef int     (__stdcall * pfnExtIoGetAGCs) (int agc_idx, char * text);  // text limited to max 16 char
-typedef int     (__stdcall * pfnExtIoGetActualAGCidx)(void);               // returns -1 on error
-typedef int     (__stdcall * pfnExtIoSetAGC) (int agc_idx);                // returns != 0 on error
+typedef int     (EXTIO_CALL * pfnExtIoGetAGCs) (int agc_idx, char * text);  // text limited to max 16 char
+typedef int     (EXTIO_CALL * pfnExtIoGetActualAGCidx)(void);               // returns -1 on error
+typedef int     (EXTIO_CALL * pfnExtIoSetAGC) (int agc_idx);                // returns != 0 on error
 // optional: HDSDR >= 2.62
-typedef int     (__stdcall * pfnExtIoShowMGC)(int agc_idx);                // return 1, to continue showing MGC slider on AGC
+typedef int     (EXTIO_CALL * pfnExtIoShowMGC)(int agc_idx);                // return 1, to continue showing MGC slider on AGC
                                                                            // return 0, is default for not showing MGC slider
 
 // for AGC in AGC_OFF (agc_idx == 0), which is (M)anual (G)ain (C)ontrol
 // sometimes referred as "IFgain" - as in SDR-14/IP
 #define EXTIO_MAX_MGC_VALUES  128
-typedef int     (__stdcall * pfnExtIoGetMGCs)(int mgc_idx, float * gain);  // fill in gain
+typedef int     (EXTIO_CALL * pfnExtIoGetMGCs)(int mgc_idx, float * gain);  // fill in gain
                              // sort by ascending gain: use idx 0 for lowest gain
                              // this functions is called with incrementing idx
                              //    - until this functions returns != 0, which means that all gains are already delivered
-typedef int     (__stdcall * pfnExtIoGetActualMgcIdx) (void);              // returns -1 on error
-typedef int     (__stdcall * pfnExtIoSetMGC) (int mgc_idx);                // returns != 0 on error
+typedef int     (EXTIO_CALL * pfnExtIoGetActualMgcIdx) (void);              // returns -1 on error
+typedef int     (EXTIO_CALL * pfnExtIoSetMGC) (int mgc_idx);                // returns != 0 on error
 
 
 // not used in HDSDR - for now
@@ -252,9 +260,9 @@ typedef int     (__stdcall * pfnExtIoSetMGC) (int mgc_idx);                // re
 //    - until this functions returns != 0, which means that all preselectors are already delivered
 // ExtIoSetPresel() with idx = -1 to activate automatic preselector selection
 // ExtIoSetPresel() with valid idx (>=0) deactivates automatic preselection
-typedef int     (__stdcall * pfnExtIoGetPresels)         ( int idx, int64_t * freq_low, int64_t * freq_high );
-typedef int     (__stdcall * pfnExtIoGetActualPreselIdx) ( void );      // returns -1 on error
-typedef int     (__stdcall * pfnExtIoSetPresel)          ( int idx );   // returns != 0 on error
+typedef int     (EXTIO_CALL * pfnExtIoGetPresels)         ( int idx, int64_t * freq_low, int64_t * freq_high );
+typedef int     (EXTIO_CALL * pfnExtIoGetActualPreselIdx) ( void );      // returns -1 on error
+typedef int     (EXTIO_CALL * pfnExtIoSetPresel)          ( int idx );   // returns != 0 on error
 
 // not used in HDSDR - for now
 // optional function to get frequency ranges usable with SetHWLO(),
@@ -264,14 +272,14 @@ typedef int     (__stdcall * pfnExtIoSetPresel)          ( int idx );   // retur
 //     and set a new frequency, which is supported
 // this functions is called with incrementing idx
 //    - until this functions returns != 0, which means that all frequency ranges are already delivered
-typedef int     (__stdcall * pfnExtIoGetFreqRanges)        ( int idx, int64_t * freq_low, int64_t * freq_high );
+typedef int     (EXTIO_CALL * pfnExtIoGetFreqRanges)        ( int idx, int64_t * freq_low, int64_t * freq_high );
 
 // not used in HDSDR - for now
 // optional function to get full samplerate of A/D Converter
 //   useful to know with direct samplers in bandpass undersampling mode
 //   example: Perseus = 80 000 000 ; SDR-14 = 66 666 667
 //   return <= 0 if undersampling not supported (when preselectors not deactivatable)
-typedef double  (__stdcall * pfnExtIoGetAdcSrate) ( void );
+typedef double  (EXTIO_CALL * pfnExtIoGetAdcSrate) ( void );
 
 // HDSDR >= 2.51
 // optional functions to receive and set all special receiver settings (for save/restore in application)
@@ -284,8 +292,8 @@ typedef double  (__stdcall * pfnExtIoGetAdcSrate) ( void );
 // value max 1024 char
 // these functions are called with incrementing idx: 0, 1, ...
 // until ExtIoGetSetting() returns != 0, which means that all settings are already delivered
-typedef int     (__stdcall * pfnExtIoGetSetting) ( int idx, char * description, char * value ); // will be called (at least) before exiting application
-typedef void    (__stdcall * pfnExtIoSetSetting) ( int idx, const char * value ); // before calling InitHW() !!!
+typedef int     (EXTIO_CALL * pfnExtIoGetSetting) ( int idx, char * description, char * value ); // will be called (at least) before exiting application
+typedef void    (EXTIO_CALL * pfnExtIoSetSetting) ( int idx, const char * value ); // before calling InitHW() !!!
   // there will be an extra call with idx = -1, if theses functions are supported by the SDR app
   // suggestion: use index 0 as ExtIO identifier (save/check ExtIO name) to allow fast skipping of all following SetSetting calls
   //   when this identifier does not match
@@ -293,14 +301,14 @@ typedef void    (__stdcall * pfnExtIoSetSetting) ( int idx, const char * value )
 // not used in HDSDR - for now
 // handling of VFOs - see also extHw_Changed_VFO
 // VFOindex is in 0 .. numVFO-1
-typedef void    (__stdcall * pfnExtIoVFOchanged) ( int VFOindex, int numVFO, int64_t extLOfreq, int64_t tunefreq, char mode );
-typedef int     (__stdcall * pfnExtIoGetVFOindex)( void );   // returns new VFOindex
+typedef void    (EXTIO_CALL * pfnExtIoVFOchanged) ( int VFOindex, int numVFO, int64_t extLOfreq, int64_t tunefreq, char mode );
+typedef int     (EXTIO_CALL * pfnExtIoGetVFOindex)( void );   // returns new VFOindex
 
 
 // HDSDR > 2.70
 
 // inform ExtIO on the features supported by the SDR application
-typedef void    (__stdcall * pfnExtIoSDRInfo)( int extSDRInfo, int additionalValue, void * additionalPtr );
+typedef void    (EXTIO_CALL * pfnExtIoSDRInfo)( int extSDRInfo, int additionalValue, void * additionalPtr );
 
 
 

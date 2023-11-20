@@ -1,6 +1,8 @@
 #pragma once
 
+#ifdef HAS_WIN_GUI_DLG
 #include <Windows.h>
+#endif
 #include <atomic>
 
 #define MAX_PPM   1000
@@ -27,4 +29,6 @@ void gui_SetMGC(int mgc_idx);
 void DisableGUIControlsAtStart();
 void EnableGUIControlsAtStop();
 
+#ifdef HAS_WIN_GUI_DLG
 INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
+#endif

@@ -3,6 +3,7 @@
 #include <rtl-sdr.h>
 
 #include <stdint.h>
+#include <cstring>
 #include <atomic>
 
 using CtrlFlagT = uint32_t;
