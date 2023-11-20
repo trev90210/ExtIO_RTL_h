@@ -14,6 +14,7 @@
 #define snprintf  _snprintf
 #endif
 
+#define N_TUNER_RETRIES  1
 
 //                                                       A  B  C  D  E
 std::atomic_int GPIO_pin[ControlVars::NUM_GPIO_BUTTONS] = { 0, 1, 2, 4, 5 };
@@ -355,7 +356,7 @@ bool Control_Changes()
     // printf("set tuner sideband %d: %s sideband\n", tmp, (tmp ? "upper" : "lower"));
     SDRLOG(extHw_MSG_DEBUG, "Control_Changes(): rtlsdr_set_tuner_sideband()");
     int r = -1;
-    for (int retry = 0; r < 0 && retry < 3; ++retry)  // retry!?!?!
+    for (int retry = 0; r < 0 && retry < N_TUNER_RETRIES; ++retry)  // retry!?!?!
       r = rtlsdr_set_tuner_sideband(dev, tmp);
     if (r < 0)
       SDRLG(extHw_MSG_ERROR, "Error setting rtlsdr_set_tuner_sideband(): %d", r);
@@ -559,7 +560,7 @@ bool Control_Changes()
     uint32_t applied_bw = 0;  // SET_TUNER_BANDWIDTH
     SDRLOG(extHw_MSG_DEBUG, "Control_Changes(): rtlsdr_set_and_get_tuner_bandwidth()");
     int r = 1;
-    for (int retry = 0; r && retry < 3; ++retry )  // retry!?!?!
+    for (int retry = 0; r && retry < N_TUNER_RETRIES; ++retry )  // retry!?!?!
       r = rtlsdr_set_and_get_tuner_bandwidth(dev, tmp * 1000, &applied_bw, 1 /* =apply_bw */);
     SDRLG(extHw_MSG_DEBUG, "Control_Changes(): rtlsdr_set_and_get_tuner_bandwidth(%d) -> bw %u, rc %d",
       tmp * 1000, unsigned(applied_bw), r);
