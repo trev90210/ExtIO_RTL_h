@@ -58,6 +58,7 @@ Manual compilation from Visual Studio 2019 Command Prompt:
 ```
 cmake -G "Visual Studio 16 2019" -A Win32 -S ExtIO_RTL -B build_ExtIO_RTL
 cmake --build build_ExtIO_RTL --config Release --target ExtIO_RTL
+cmake --build build_ExtIO_RTL --config Release --target rtl_tools
 ```
 
 A pre-built binary should be available in github Actions.
