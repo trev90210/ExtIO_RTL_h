@@ -24,7 +24,7 @@ jobs:
     steps:
 
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 2
         submodules:  recursive
@@ -57,7 +57,7 @@ jobs:
         cp "${{runner.workspace}}/build_ExtIO_RTL/Release/ExtIO_RTL.dll" ./
 
     - name: package and upload
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: extio_rtl
         path: |
