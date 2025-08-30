@@ -32,7 +32,9 @@ jobs:
     - name: Configure Visual Studio and CMake
       working-directory: ${{runner.workspace}}
       run: |
-          cmd.exe /c dir "c:\Program Files\"
+          cmd.exe /c dir "c:\Program Files (x86)\"
+          cmd.exe /c dir "c:\Program Files\Microsoft Visual Studio"
+          cmd.exe /c dir "c:\Program Files\Microsoft Visual Studio 14.0"
           # setup the compiler
           cmd.exe /c "call `"C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat`" && set > %temp%\vcvars.txt"
           Get-Content "$env:temp\vcvars.txt" | Foreach-Object { if ($_ -match "^(.*?)=(.*)$") { Set-Content "env:\$($matches[1])" $matches[2] } }
