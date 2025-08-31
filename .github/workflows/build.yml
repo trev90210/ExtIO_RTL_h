@@ -19,7 +19,7 @@ jobs:
   build-on-windows:
     # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
     # windows-latest or windows-2022 fail!?
-    runs-on: windows-latest
+    runs-on: windows-2025
 
     steps:
 
@@ -32,7 +32,7 @@ jobs:
     - name: Configure Visual Studio and CMake
       working-directory: ${{runner.workspace}}
       run: |
-          cmd.exe /c dir "d:\a\" /s
+          cmd.exe /c dir "d:\a\" 
           #cmd.exe /c dir "c:\Program Files (x86)\Microsoft Visual Studio/installer"
           #cmd.exe /c dir "c:\Program Files (x86)\Microsoft Visual Studio/shared"
           #cmd.exe /c dir "c:\Program Files (x86)\Microsoft Visual Studio 14.0/SDK"
