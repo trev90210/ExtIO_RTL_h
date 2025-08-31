@@ -41,7 +41,7 @@ jobs:
           #cmd.exe /c dir "c:\Program Files\Microsoft Visual Studio 14.0/common7"
           # setup the compiler
           cmd.exe /c "call `"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat`" && set > %temp%\vcvars.txt"
-          #type "%temp%\vcvars.txt"
+          type %temp%\vcvars.txt
           #type temp\vcvars.txt
           Get-Content "$env:temp\vcvars.txt" | Foreach-Object { if ($_ -match "^(.*?)=(.*)$") { Set-Content "env:\$($matches[1])" $matches[2] } }
           cmd.exe /c set
