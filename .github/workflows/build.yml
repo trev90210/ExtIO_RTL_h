@@ -32,8 +32,8 @@ jobs:
     - name: Configure Visual Studio and CMake
       working-directory: ${{runner.workspace}}
       run: |
-          cmd.exe /c dir "d:\a\ExtIO_RTL_h\ExtIO_RTL_h\" 
-          cmd.exe /c dir "d:\a\ExtIO_RTL_h\ExtIO_RTL_h\pthread-win32\" 
+          #cmd.exe /c dir "d:\a\ExtIO_RTL_h\ExtIO_RTL_h\" 
+          #cmd.exe /c dir "d:\a\ExtIO_RTL_h\ExtIO_RTL_h\pthread-win32\" 
           #cmd.exe /c dir "c:\Program Files (x86)\Microsoft Visual Studio/installer"
           #cmd.exe /c dir "c:\Program Files (x86)\Microsoft Visual Studio/shared"
           #cmd.exe /c dir "c:\Program Files (x86)\Microsoft Visual Studio 14.0/SDK"
@@ -41,10 +41,10 @@ jobs:
           #cmd.exe /c dir "c:\Program Files\Microsoft Visual Studio 14.0/common7"
           # setup the compiler
           cmd.exe /c "call `"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat`" && set > %temp%\vcvars.txt"
-          echo "$env:temp\vcvars.txt"
+          type "$env:temp\vcvars.txt"
           Get-Content "$env:temp\vcvars.txt" | Foreach-Object { if ($_ -match "^(.*?)=(.*)$") { Set-Content "env:\$($matches[1])" $matches[2] } }
           # run cmake, looks v141_xp Toolset requires VS 2019
-          cmake -G "Visual Studio 16 2019" -A Win32 -S ExtIO_RTL_h -B build_ExtIO_RTL
+          cmake -G "Visual Studio 17 2022" -A Win32 -S ExtIO_RTL_h -B build_ExtIO_RTL
 
     - name: Build
       working-directory: ${{runner.workspace}}
