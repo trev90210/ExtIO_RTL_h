@@ -33,6 +33,7 @@ jobs:
       working-directory: ${{runner.workspace}}
       run: |
           cmd.exe /c dir "d:\a\ExtIO_RTL_h\ExtIO_RTL_h\" 
+          cmd.exe /c dir "d:\a\ExtIO_RTL_h\ExtIO_RTL_h\pthread-win32\" 
           #cmd.exe /c dir "c:\Program Files (x86)\Microsoft Visual Studio/installer"
           #cmd.exe /c dir "c:\Program Files (x86)\Microsoft Visual Studio/shared"
           #cmd.exe /c dir "c:\Program Files (x86)\Microsoft Visual Studio 14.0/SDK"
