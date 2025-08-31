@@ -43,6 +43,7 @@ jobs:
           cmd.exe /c "call `"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat`" && set > %temp%\vcvars.txt"
           type "$env:temp\vcvars.txt"
           Get-Content "$env:temp\vcvars.txt" | Foreach-Object { if ($_ -match "^(.*?)=(.*)$") { Set-Content "env:\$($matches[1])" $matches[2] } }
+          cmd.exe /c set
           # run cmake, looks v141_xp Toolset requires VS 2019
           cmake -G "Visual Studio 17 2022" -A Win32 -S ExtIO_RTL_h -B build_ExtIO_RTL
 
