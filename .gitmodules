@@ -1,6 +1,6 @@
 [submodule "libusb"]
 	path = libusb
-	url = https://github.com/hayguen/libusb.git
+	url = https://github.com/trev90210/libusb.git
 [submodule "pthread-win32"]
 	path = pthread-win32
 	url = https://github.com/hayguen/pthread-win32.git
