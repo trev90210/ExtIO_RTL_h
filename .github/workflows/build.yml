@@ -36,6 +36,7 @@ jobs:
           git clone https://github.com/marzer/tomlplusplus
           git clone https://github.com/libusb/libusb
           git clone https://github.com/trev90210/librtlsdr-stevem
+          git clone https://github.com/GerHobbelt/pthread-win32
           #cmd.exe /c dir "d:\a\ExtIO_RTL_h\ExtIO_RTL_h\" 
           #cmd.exe /c dir "d:\a\ExtIO_RTL_h\ExtIO_RTL_h\pthread-win32\" 
           #cmd.exe /c dir "c:\Program Files (x86)\Microsoft Visual Studio/installer"
