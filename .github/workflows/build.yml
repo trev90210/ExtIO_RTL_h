@@ -36,6 +36,12 @@ jobs:
           git clone https://github.com/libusb/libusb libusb
           git clone https://github.com/trev90211/librtlsdr librtlsdr
           git clone https://github.com/GerHobbelt/pthread-win32 pthread-win32
+    - name: Build pthread-win32
+      working-directory: ${{runner.workspace}}
+      run: |
+          cd pthread-win32
+          cmake -B ${{github.workspace}}/pthread-win32/static -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${{github.workspace}}/pthread-win32/static"
+          cmake --build ${{github.workspace}}/pthread-win32/static --config Release --target install
           #cmd.exe /c dir "d:\a\ExtIO_RTL_h\ExtIO_RTL_h\" 
           #cmd.exe /c dir "d:\a\ExtIO_RTL_h\ExtIO_RTL_h\pthread-win32\" 
           #cmd.exe /c dir "c:\Program Files (x86)\Microsoft Visual Studio/installer"
