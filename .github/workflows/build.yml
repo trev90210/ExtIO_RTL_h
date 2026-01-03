@@ -29,7 +29,7 @@ jobs:
       with:
         fetch-depth: 2
 
-    - name: Configure Visual Studio and CMake
+    - name: Clone dependencies
       working-directory: ${{runner.workspace}}
       run: |
           git clone https://github.com/marzer/tomlplusplus tomlplusplus
@@ -42,6 +42,19 @@ jobs:
           cd pthread-win32
           cmake -B ${{github.workspace}}/pthread-win32/static -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${{github.workspace}}/pthread-win32/static"
           cmake --build ${{github.workspace}}/pthread-win32/static --config Release --target install
+          cd ..
+          
+    - name: Build libusb
+      working-directory: ${{runner.workspace}}
+      run: |
+          cd libusb
+          cmake -B ${{github.workspace}}/libusb/static -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${{github.workspace}}/pthread-win32/static"
+          cmake --build ${{github.workspace}}/libusb/static --config Release --target install
+          cd ..
+
+    - name: Configure Visual Studio and CMake
+      working-directory: ${{runner.workspace}}
+      run: |
           #cmd.exe /c dir "d:\a\ExtIO_RTL_h\ExtIO_RTL_h\" 
           #cmd.exe /c dir "d:\a\ExtIO_RTL_h\ExtIO_RTL_h\pthread-win32\" 
           #cmd.exe /c dir "c:\Program Files (x86)\Microsoft Visual Studio/installer"
