@@ -48,7 +48,7 @@ jobs:
       working-directory: ${{runner.workspace}}
       run: |
           cd libusb
-          cmake -B ${{github.workspace}}/libusb/static -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${{github.workspace}}/pthread-win32/static"
+          cmake -B ${{github.workspace}}/libusb -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${{github.workspace}}/pthread-win32/static"
           cmake --build ${{github.workspace}}/libusb/static --config Release --target install
           cd ..
 
