@@ -28,15 +28,14 @@ jobs:
       uses: actions/checkout@v4
       with:
         fetch-depth: 2
-        submodules:  recursive
 
     - name: Configure Visual Studio and CMake
       working-directory: ${{runner.workspace}}
       run: |
-          git clone https://github.com/marzer/tomlplusplus
-          git clone https://github.com/libusb/libusb
-          git clone https://github.com/trev90210/librtlsdr-stevem
-          git clone https://github.com/GerHobbelt/pthread-win32
+          git clone https://github.com/marzer/tomlplusplus tomlplusplus
+          git clone https://github.com/libusb/libusb libusb
+          git clone https://github.com/trev90211/librtlsdr librtlsdr
+          git clone https://github.com/GerHobbelt/pthread-win32 pthread-win32
           #cmd.exe /c dir "d:\a\ExtIO_RTL_h\ExtIO_RTL_h\" 
           #cmd.exe /c dir "d:\a\ExtIO_RTL_h\ExtIO_RTL_h\pthread-win32\" 
           #cmd.exe /c dir "c:\Program Files (x86)\Microsoft Visual Studio/installer"
