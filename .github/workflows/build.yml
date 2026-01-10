@@ -52,8 +52,7 @@ jobs:
       working-directory: ${{runner.workspace}}
       run: |
           cd libusb
-          cmake -B ${{runner.workspace}}\libusb -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${{runner.workspace}}\libusb"
-          cmake --build ${{runner.workspace}}\libusb --config Release --target install
+          msbuild msvc/libusb.sln /m -property:Configuration=Release -property:Platform=Win32
           cd ..
 
     - name: Configure Visual Studio and CMake
