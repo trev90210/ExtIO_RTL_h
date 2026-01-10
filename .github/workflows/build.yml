@@ -52,8 +52,8 @@ jobs:
       working-directory: ${{runner.workspace}}
       run: |
           cd libusb
-          cmake -B ${{runner.workspace}}/libusb -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${{runner.workspace}}/libusb/static"
-          cmake --build ${{runner.workspace}}/libusb/static --config Release --target install
+          cmake -B ${{runner.workspace}}\libusb -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${{runner.workspace}}\libusb"
+          cmake --build ${{runner.workspace}}\libusb --config Release --target install
           cd ..
 
     - name: Configure Visual Studio and CMake
