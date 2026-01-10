@@ -37,6 +37,7 @@ jobs:
           git clone https://github.com/trev90211/librtlsdr librtlsdr
           git clone https://github.com/GerHobbelt/pthread-win32 pthread-win32
           cmd.exe /c dir ${{runner.workspace}}
+          cmd.exe /c dir ${{runner.workspace}}\pthread-win32\static 
           cmd.exe /c dir ${{runner.workspace}}\pthread-win32 /s 
           cmd.exe /c dir ${{github.workspace}}
     - name: Build pthread-win32
