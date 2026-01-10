@@ -48,8 +48,9 @@ jobs:
           cmake --build ${{runner.workspace}}/pthread-win32/static --config Release --target install
           cd ..
           
-    - name: Build libusb
+    - name: Setup MSBuild
       uses: microsoft/setup-msbuild@v1.3
+    - name: Build libusb
       working-directory: ${{runner.workspace}}
       run: |
           cd libusb
