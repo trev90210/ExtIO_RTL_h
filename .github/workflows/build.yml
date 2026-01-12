@@ -63,7 +63,7 @@ jobs:
           cd ..
 
     - name: Configure Visual Studio and CMake
-      working-directory: ${{github.workspace}}
+      working-directory: ${{runner.workspace}}
       run: |
           #cmd.exe /c dir "d:\a\ExtIO_RTL_h\ExtIO_RTL_h\" 
           #cmd.exe /c dir "d:\a\ExtIO_RTL_h\ExtIO_RTL_h\pthread-win32\" 
