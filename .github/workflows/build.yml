@@ -30,7 +30,7 @@ jobs:
         fetch-depth: 2
 
     - name: Clone dependencies
-      working-directory: ${{runner.workspace}}
+      working-directory: ${{github.workspace}}
       run: |
           cd ${{github.workspace}}
           git clone https://github.com/marzer/tomlplusplus tomlplusplus
@@ -39,15 +39,15 @@ jobs:
           git clone https://github.com/GerHobbelt/pthread-win32 pthread-win32
           cmd.exe /c echo **
           cmd.exe /c dir ${{runner.workspace}}
-          cmd.exe /c dir ${{runner.workspace}}\pthread-win32\static 
-          cmd.exe /c dir ${{runner.workspace}}\pthread-win32 /s 
+          cmd.exe /c dir ${{github.workspace}}\pthread-win32\static 
+          cmd.exe /c dir ${{github.workspace}}\pthread-win32 /s 
           cmd.exe /c dir ${{github.workspace}}
     - name: Build pthread-win32
-      working-directory: ${{runner.workspace}}
+      working-directory: ${{github.workspace}}
       run: |
           cd pthread-win32
-          cmake -B ${{runner.workspace}}/pthread-win32/static -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${{runner.workspace}}/pthread-win32/static"
-          cmake --build ${{runner.workspace}}/pthread-win32/static --config Release --target install
+          cmake -B ${{github.workspace}}/pthread-win32/static -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${{github.workspace}}/pthread-win32/static"
+          cmake --build ${{github.workspace}}/pthread-win32/static --config Release --target install
           cmd.exe /c dir /s
           cmd.exe /c dir ${{github.workspace}} /s
           cmd.exe /c dir ${{runner.workspace}} /s
@@ -56,14 +56,14 @@ jobs:
     - name: Setup MSBuild
       uses: microsoft/setup-msbuild@v1.3
     - name: Build libusb
-      working-directory: ${{runner.workspace}}
+      working-directory: ${{github.workspace}}
       run: |
           cd libusb
           msbuild msvc/libusb.sln /m -property:Configuration=Release -property:Platform=Win32
           cd ..
 
     - name: Configure Visual Studio and CMake
-      working-directory: ${{runner.workspace}}
+      working-directory: ${{github.workspace}}
       run: |
           #cmd.exe /c dir "d:\a\ExtIO_RTL_h\ExtIO_RTL_h\" 
           #cmd.exe /c dir "d:\a\ExtIO_RTL_h\ExtIO_RTL_h\pthread-win32\" 
@@ -82,7 +82,7 @@ jobs:
           cmake -G "Visual Studio 17 2022" -A Win32 -S ExtIO_RTL_h -B build_ExtIO_RTL
 
     - name: Build
-      working-directory: ${{runner.workspace}}
+      working-directory: ${{github.workspace}}
       shell: bash
       run: cmake --build build_ExtIO_RTL --config $BUILD_TYPE --target ExtIO_RTL
 
@@ -92,19 +92,19 @@ jobs:
     #  run: find . >src_listing.txt
 
     - name: Collect files to distribute
-      working-directory: ${{runner.workspace}}
+      working-directory: ${{github.workspace}}
       shell: bash
       run: |
-        cp "${{runner.workspace}}/ExtIO_RTL/README.md" ./
-        cp "${{runner.workspace}}/ExtIO_RTL/COPYING" ./LICENSE
-        cp "${{runner.workspace}}/build_ExtIO_RTL/Release/ExtIO_RTL.dll" ./
+        cp "${{github.workspace}}/ExtIO_RTL/README.md" ./
+        cp "${{github.workspace}}/ExtIO_RTL/COPYING" ./LICENSE
+        cp "${{github.workspace}}/build_ExtIO_RTL/Release/ExtIO_RTL.dll" ./
 
     - name: package and upload
       uses: actions/upload-artifact@v4
       with:
         name: extio_rtl
         path: |
-            ${{runner.workspace}}/ExtIO_RTL.dll
-            ${{runner.workspace}}/README.md
-            ${{runner.workspace}}/LICENSE
+            ${{github.workspace}}/ExtIO_RTL.dll
+            ${{github.workspace}}/README.md
+            ${{github.workspace}}/LICENSE
 
