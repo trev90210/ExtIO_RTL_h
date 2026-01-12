@@ -32,6 +32,7 @@ jobs:
     - name: Clone dependencies
       working-directory: ${{runner.workspace}}
       run: |
+          cd ${{github.workspace}}
           git clone https://github.com/marzer/tomlplusplus tomlplusplus
           git clone https://github.com/libusb/libusb libusb
           git clone https://github.com/trev90211/librtlsdr librtlsdr
