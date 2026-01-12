@@ -46,6 +46,9 @@ jobs:
           cd pthread-win32
           cmake -B ${{runner.workspace}}/pthread-win32/static -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${{runner.workspace}}/pthread-win32/static"
           cmake --build ${{runner.workspace}}/pthread-win32/static --config Release --target install
+          cmd.exe /c dir /s
+          cmd.exe /c dir ${{github.workspace}} /s
+          cmd.exe /c dir ${{runner.workspace}} /s
           cd ..
           
     - name: Setup MSBuild
