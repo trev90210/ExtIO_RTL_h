@@ -24,7 +24,7 @@ set(RTL_STATIC_BUILD TRUE)
 set(LINK_RTLTOOLS_AGAINST_STATIC_LIB TRUE)
 
 if (WIN32)
-    set( libpthreadVC3 "${CMAKE_CURRENT_SOURCE_DIR}/pthread-win32/static/Release/" )
+    set( libpthreadVC3 "TRUE" )
     set( EXTIO_THREAD_LIB libpthreadVC3 )
     set( EXTIO_THREAD_LIB "${CMAKE_CURRENT_SOURCE_DIR}/pthread-win32/static/Release/" )
     #set( pthread-win32 "${CMAKE_CURRENT_SOURCE_DIR}/pthread-win32/static/Release/" )
