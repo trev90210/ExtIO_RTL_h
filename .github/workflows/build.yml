@@ -99,8 +99,8 @@ jobs:
           cmd.exe /c set
           # run cmake, looks v141_xp Toolset requires VS 2019
           cmake -G "Visual Studio 17 2022" -A Win32 -S ExtIO_RTL_h -B build_ExtIO_RTL \
-                -DTHREADS_PTHREADS_INCLUDE_DIR='${{github.workspace}}/pthread-win32/include' \
-                -DTHREADS_PTHREADS_LIBRARY='${{github.workspace}}/pthread-win32/static/pthreadVC3.lib' \
+                -DTHREADS_PTHREADS_INCLUDE_DIR='${{github.workspace}}/pthread-win32/static/include' \
+                -DTHREADS_PTHREADS_LIBRARY='${{github.workspace}}/pthread-win32/static/lib/pthreadVC3.lib' \
                 -DLIBUSB_LIBRARY='${{github.workspace}}/libusb/Release/lib/libusb-1.0.lib' \
                 -DLIBUSB_INCLUDE_DIRS='${{github.workspace}}/libusb/include/libusb-1.0'
 
