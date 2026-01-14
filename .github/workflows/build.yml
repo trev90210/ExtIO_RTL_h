@@ -72,12 +72,9 @@ jobs:
     - name: Build libusb
       working-directory: ${{github.workspace}}
       run: |
-          cd libusb
+          cd ${{github.workspace}}/libusb
           msbuild msvc/libusb.sln /m -property:Configuration=Release -property:Platform=Win32
-                    cmd.exe /c echo ********************************************
-          cmd.exe /c echo dir /s
-          cmd.exe /c dir /s
-          cmd.exe /c echo ********************************************          cmd.exe /c echo ********************************************
+          cmd.exe /c echo ********************************************
           cmd.exe /c echo dir /s
           cmd.exe /c dir /s
           cmd.exe /c echo ********************************************
@@ -86,7 +83,8 @@ jobs:
     - name: Configure Visual Studio and CMake
       working-directory: ${{runner.workspace}}
       run: |
-          #cmd.exe /c dir "d:\a\ExtIO_RTL_h\ExtIO_RTL_h\" 
+          cd ${{github.workspace}}
+          cmd.exe /c dir 
           #cmd.exe /c dir "d:\a\ExtIO_RTL_h\ExtIO_RTL_h\pthread-win32\" 
           #cmd.exe /c dir "c:\Program Files (x86)\Microsoft Visual Studio/installer"
           #cmd.exe /c dir "c:\Program Files (x86)\Microsoft Visual Studio/shared"
