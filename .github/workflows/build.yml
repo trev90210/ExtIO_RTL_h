@@ -102,7 +102,7 @@ jobs:
                 -DTHREADS_PTHREADS_INCLUDE_DIR='${{github.workspace}}/pthread-win32/static/include' \
                 -DTHREADS_PTHREADS_LIBRARY='${{github.workspace}}/pthread-win32/static/lib/pthreadVC3.lib' \
                 -DLIBUSB_LIBRARY='${{github.workspace}}/libusb/Release/lib/libusb-1.0.lib' \
-                -DLIBUSB_INCLUDE_DIRS='${{github.workspace}}/libusb/include/libusb-1.0'
+                -DLIBUSB_INCLUDE_DIRS='${{github.workspace}}/libusb/include/libusb-1.0' .
 
     - name: Build
       working-directory: ${{github.workspace}}
