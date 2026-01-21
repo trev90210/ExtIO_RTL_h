@@ -1,33 +1,28 @@
-name: CMake
+name: Windows build and Package
 
-on:
-  workflow_dispatch:
-  # Trigger the workflow on push or pull request - but only for the main branch
-  push:
-    branches:
-      - master
-    tags-ignore:
-      - 'v*'
-  pull_request:
-    branches:
-      - master
-
-env:
-  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
-  BUILD_TYPE: Release
+on: [workflow_dispatch, push, pull_request]
 
 jobs:
-  build-on-windows:
-    # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
-    # windows-latest or windows-2022 fail!?
-    runs-on: windows-2025
+  build:
+    strategy:
+      matrix:
+        os:
+        #  - 'windows-2022'
+          - 'windows-2025'
+        configuration:
+          - 'Release'
+        architecture:
+          - 'Win32'
+          - 'x64'
+          - 'ARM64'
+
+    runs-on: ${{ matrix.os }}
 
     steps:
-
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 2
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
     - name: Clone dependencies
       working-directory: ${{github.workspace}}
@@ -50,22 +45,7 @@ jobs:
           cmd.exe /c echo github.workspace  ${{github.workspace}}
           cmd.exe /c dir ${{github.workspace}} 
           cmd.exe /c echo ********************************************
-    - name: Build pthread-win32
-      working-directory: ${{github.workspace}}
-      run: |
-          cd pthread-win32
-          cmake -B ${{github.workspace}}/pthread-win32/static -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="${{github.workspace}}/pthread-win32/static"
-          cmake --build ${{github.workspace}}/pthread-win32/static --config Release --target install
-          cmd.exe /c echo ********************************************
-          cmd.exe /c echo dir /s
-          cmd.exe /c dir /s
-          cmd.exe /c echo ********************************************
-          cmd.exe /c echo github.workspace  ${{github.workspace}} /s
-          cmd.exe /c dir ${{github.workspace}} /s
-          cmd.exe /c echo ********************************************
-          cmd.exe /c echo runner.workspace  ${{runner.workspace}} /s
-          cmd.exe /c dir ${{runner.workspace}} /s
-          cd ..
+
  
     - name: Setup MSBuild
       uses: microsoft/setup-msbuild@v2
@@ -80,7 +60,7 @@ jobs:
           cmd.exe /c "call `"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat`" && set > %temp%\vcvars.txt"
           Get-Content "$env:temp\vcvars.txt" | Foreach-Object { if ($_ -match "^(.*?)=(.*)$") { Set-Content "env:\$($matches[1])" $matches[2] } }
           # run cmake, looks v141_xp Toolset requires VS 2019
-          cmake -G "Visual Studio 17 2022" -A Win32 -S libusb -B build_ExtIO_RTL
+          cmake -G "Visual Studio 17 2022" -A ${{ matrix.architecture }} -S ExtIO_RTL -B build_ExtIO_RTL
 
     - name: Build
       working-directory: ${{github.workspace}}
