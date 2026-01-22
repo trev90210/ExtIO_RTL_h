@@ -7,7 +7,7 @@ jobs:
     strategy:
       matrix:
         os:
-        #  - 'windows-2022'
+          - 'windows-2022'
           - 'windows-2025'
         configuration:
           - 'Release'
@@ -23,6 +23,8 @@ jobs:
       LONG_ARCH: "${{ matrix.architecture == 'x64' && 'x86_64' || (matrix.architecture == 'Win32' && 'x86' || 'ARM64' )}}"
 
     runs-on: ${{ matrix.os }}
+    concurrency:
+      group: example-${{ matrix.os }}
 
     steps:
       - name: Checkout code
