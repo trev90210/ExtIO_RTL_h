@@ -25,8 +25,13 @@ jobs:
           fetch-depth: 2
           submodules:  ignore
 
-      - name: Dir Listing
-        run: cmd.exe /c dir
+      - name: check
+        run: |
+          rmdir /S /Q tomlplusplus
+          rmdir /S /Q libusb
+          rmdir /S /Q librtlsdr
+          rmdir /S /Q pthread-win32
+          cmd.exe /c dir
 
       - name: Clone dependencies
         working-directory: ${{github.workspace}}
