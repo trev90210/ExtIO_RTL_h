@@ -62,8 +62,8 @@ jobs:
           cmd.exe /c echo ********************************************
 
  
-      - name: Setup MSBuild
-        uses: microsoft/setup-msbuild@v2
+      #- name: Setup MSBuild
+      #  uses: microsoft/setup-msbuild@v2
         
 
     
