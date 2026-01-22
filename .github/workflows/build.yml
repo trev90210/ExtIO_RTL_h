@@ -27,10 +27,10 @@ jobs:
 
       - name: check
         run: |
-          rmdir /S /Q tomlplusplus
-          rmdir /S /Q libusb
-          rmdir /S /Q librtlsdr
-          rmdir /S /Q pthread-win32
+          cmd.exe /c rmdir /S /Q tomlplusplus
+          cmd.exe /c rmdir /S /Q libusb
+          cmd.exe /c rmdir /S /Q librtlsdr
+          cmd.exe /c rmdir /S /Q pthread-win32
           cmd.exe /c dir
 
       - name: Clone dependencies
