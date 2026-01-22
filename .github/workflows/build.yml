@@ -14,16 +14,10 @@ jobs:
         architecture:
           - 'Win32'
             env: ARCH_NUM='32'
-            env: ARCH_LONG='x86'
-            env: ARCH_CMAKE='Win32'
           - 'x64'
             env: ARCH_NUM='64'
-            env: ARCH_LONG='x86_64'
-            env: ARCH_CMAKE='Win32'
           - 'ARM64'
             env: ARCH_NUM='64'
-            env: ARCH_LONG='x86_64'
-            env: ARCH_CMAKE='Win32'
 
     env:
       ARCH: ${{ matrix.architecture }}
