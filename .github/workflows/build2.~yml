@@ -1,0 +1,107 @@
+name: Windows build and Package
+
+on: [workflow_dispatch, push, pull_request]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os:
+        #  - 'windows-2022'
+          - 'windows-2025'
+        configuration:
+          - 'Release'
+        architecture:
+          - 'Win32'
+          - 'x64'
+          - 'ARM64'
+
+    env:
+      ARCH: ${{ matrix.architecture }}
+      ARCH_NUM: "${{ matrix.architecture == 'x64' && '64' || (matrix.architecture == 'Win32' && '32' || 'amd64_arm64' )}}"
+      CMAKE_ARCH: "${{ matrix.architecture == 'x64' && 'x64' || (matrix.architecture == 'Win32' && 'Win32' || 'ARM64' )}}"
+      LONG_ARCH: "${{ matrix.architecture == 'x64' && 'x86_64' || (matrix.architecture == 'Win32' && 'x86' || 'ARM64' )}}"
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          submodules:  ignore
+
+      - name: check
+        run: |
+          cmd.exe /c rmdir /S /Q tomlplusplus
+          cmd.exe /c rmdir /S /Q libusb
+          cmd.exe /c rmdir /S /Q librtlsdr
+          cmd.exe /c rmdir /S /Q pthread-win32
+          cmd.exe /c dir
+
+      - name: Clone dependencies
+        working-directory: ${{github.workspace}}
+        run: |
+          cd ${{github.workspace}}
+          git clone https://github.com/marzer/tomlplusplus tomlplusplus
+          git clone https://github.com/libusb/libusb libusb
+          git clone https://github.com/trev90211/rtl-sdr
+          git clone https://github.com/GerHobbelt/pthread-win32 pthread-win32
+          cmd.exe /c echo ********************************************
+          cmd.exe /c echo runner.workspace  ${{runner.workspace}} /s
+          cmd.exe /c dir ${{runner.workspace}} /s
+          cmd.exe /c echo ********************************************
+          cmd.exe /c echo github.workspace  ${{github.workspace}}\pthread-win32\static 
+          cmd.exe /c dir ${{github.workspace}}\pthread-win32\static 
+          cmd.exe /c echo ********************************************
+          cmd.exe /c echo github.workspace  ${{github.workspace}}\pthread-win32  
+          cmd.exe /c dir ${{github.workspace}}\pthread-win32
+          cmd.exe /c echo ********************************************
+          cmd.exe /c echo github.workspace  ${{github.workspace}}
+          cmd.exe /c dir ${{github.workspace}} 
+          cmd.exe /c echo ********************************************
+
+ 
+      #- name: Setup MSBuild
+      #  uses: microsoft/setup-msbuild@v2
+        
+
+    
+      - name: Configure Visual Studio and CMake
+        working-directory: ${{runner.workspace}}
+        run: |
+          cmd.exe /c dir "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\"
+          cd ${{ runner.workspace }}
+          # setup the compiler
+          cmd.exe /c "call `"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars${{env.ARCH_NUM}}.bat`" && set > %temp%\vcvars.txt"
+          Get-Content "$env:temp\vcvars.txt" | Foreach-Object { if ($_ -match "^(.*?)=(.*)$") { Set-Content "env:\$($matches[1])" $matches[2] } }
+          # run cmake, looks v141_xp Toolset requires VS 2019
+          cmake -G "Visual Studio 17 2022" -A ${{ matrix.architecture }} -S ExtIO_RTL -B build_ExtIO_RTL
+
+      - name: Build
+        working-directory: ${{runner.workspace}}
+        shell: bash
+        run: cmake --build build_ExtIO_RTL --config ${{ matrix.configuration }} --target ExtIO_RTL
+
+      #- name: Dir Listing
+      #  working-directory: ${{runner.workspace}}
+      #  shell: bash
+      #  run: find . >src_listing.txt
+
+      - name: Collect files to distribute
+        working-directory: ${{github.workspace}}
+        shell: bash
+        run: |
+          cp "${{github.workspace}}/ExtIO_RTL/README.md" ./
+          cp "${{github.workspace}}/ExtIO_RTL/COPYING" ./LICENSE
+          cp "${{github.workspace}}/build_ExtIO_RTL/Release/ExtIO_RTL.dll" ./
+
+      - name: package and upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: extio_rtl
+          path: |
+            ${{github.workspace}}/ExtIO_RTL.dll
+            ${{github.workspace}}/README.md
+            ${{github.workspace}}/LICENSE
+
