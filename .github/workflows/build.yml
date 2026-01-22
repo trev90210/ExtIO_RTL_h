@@ -45,7 +45,7 @@ jobs:
           cd ${{github.workspace}}
           git clone https://github.com/marzer/tomlplusplus tomlplusplus
           git clone https://github.com/libusb/libusb libusb
-          git clone https://github.com/trev90211/librtlsdr librtlsdr
+          git clone https://github.com/trev90211/rtl-sdr
           git clone https://github.com/GerHobbelt/pthread-win32 pthread-win32
           cmd.exe /c echo ********************************************
           cmd.exe /c echo runner.workspace  ${{runner.workspace}} /s
