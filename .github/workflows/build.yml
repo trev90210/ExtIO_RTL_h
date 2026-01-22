@@ -73,7 +73,7 @@ jobs:
           cmd.exe /c dir "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\"
           cd ${{ runner.workspace }}
           # setup the compiler
-          cmd.exe /c "call `"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars${{ENV.ARCH_NUM}}.bat`" && set > %temp%\vcvars.txt"
+          cmd.exe /c "call `"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars${env.ARCH_NUM}.bat`" && set > %temp%\vcvars.txt"
           Get-Content "$env:temp\vcvars.txt" | Foreach-Object { if ($_ -match "^(.*?)=(.*)$") { Set-Content "env:\$($matches[1])" $matches[2] } }
           # run cmake, looks v141_xp Toolset requires VS 2019
           cmake -G "Visual Studio 17 2022" -A ${{ matrix.architecture }} -S ExtIO_RTL -B build_ExtIO_RTL
