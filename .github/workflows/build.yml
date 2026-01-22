@@ -13,11 +13,8 @@ jobs:
           - 'Release'
         architecture:
           - 'Win32'
-            env: ARCH_NUM='32'
           - 'x64'
-            env: ARCH_NUM='64'
           - 'ARM64'
-            env: ARCH_NUM='64'
 
     env:
       ARCH: ${{ matrix.architecture }}
