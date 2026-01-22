@@ -63,9 +63,9 @@ jobs:
           cmake -G "Visual Studio 17 2022" -A ${{ matrix.architecture }} -S ExtIO_RTL -B build_ExtIO_RTL
 
       - name: Build
-        working-directory: ${{github.workspace}}
+        working-directory: ${{runner.workspace}}
         shell: bash
-        run: cmake --build build_ExtIO_RTL --config $BUILD_TYPE --target ExtIO_RTL
+        run: cmake --build build_ExtIO_RTL --config ${{ matrix.configuration }} --target ExtIO_RTL
 
       #- name: Dir Listing
       #  working-directory: ${{runner.workspace}}
