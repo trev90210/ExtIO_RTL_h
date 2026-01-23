@@ -13,8 +13,8 @@ jobs:
           - 'Release'
         architecture:
           - 'Win32'
-          - 'x64'
-          - 'ARM64'
+          #- 'x64'
+          #- 'ARM64'
 
     env:
       ARCH: ${{ matrix.architecture }}
