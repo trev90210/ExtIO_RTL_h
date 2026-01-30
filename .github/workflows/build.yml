@@ -2,10 +2,6 @@ name: Windows build and Package
 
 on: [workflow_dispatch, push, pull_request]
 
-defaults:
-  run:
-    shell: PowerShell
-
 jobs:
   build_ExtIO_RTL:
     strategy:
@@ -19,6 +15,10 @@ jobs:
           - 'Win32'
           - 'x64'
           #- 'ARM64'
+
+  defaults:
+    run:
+      shell: PowerShell
 
     env:
       ARCH: ${{ matrix.architecture }}
