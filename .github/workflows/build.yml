@@ -15,7 +15,7 @@ jobs:
           - 'Win32'
           - 'x64'
           #- 'ARM64'
-
+          
     defaults:
       run:
         shell: PowerShell
