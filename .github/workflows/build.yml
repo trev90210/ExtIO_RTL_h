@@ -69,9 +69,9 @@ jobs:
           echo "********************************************"
 
           
-    - name: Build pthread-win32
-      working-directory: ${{ runner.workspace }}
-      run: |
+      - name: Build pthread-win32
+        working-directory: ${{ runner.workspace }}
+        run: |
           cd pthread-win32
           cmake -B shared `
                 -DBUILD_SHARED_LIBS=ON `
@@ -80,8 +80,8 @@ jobs:
                 --config Release `
                 --target install
                 
-    - name: List pthread
-      run: |
+      - name: List pthread
+        run: |
           echo "********************************************"
           ls 
           echo "********************************************"
@@ -89,12 +89,12 @@ jobs:
           echo "********************************************"
           ls -Recurse -Exclude ".git,debian" -Path  "${{ runner.workspace }}/pthread-win32" 
         
-    - name: Setup MSBuild
-      uses: microsoft/setup-msbuild@v2
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
 
-    - name: libusb Configure Visual Studio and CMake
-      working-directory: ${{runner.workspace}}/libusb
-      run: |
+      - name: libusb Configure Visual Studio and CMake
+        working-directory: ${{runner.workspace}}/libusb
+        run: |
           msbuild msvc/libusb.sln `
                 /m `
                 -property:Configuration=Release `
@@ -103,20 +103,20 @@ jobs:
           ##      --config Release `
           ##      --target install
 
-    - name: List libusb
-      run: |
+      - name: List libusb
+        run: |
           echo "********************************************"
           ls -Recurse -Exclude ".git,debian"  -Path "${{ runner.workspace }}/libusb"
           echo "********************************************"
           cd ..
 
-    - name: RTL-SDR configure build
-      working-directory: ${{runner.workspace}}/librtlsdr
-      run: |
-        mkdir ${{runner.workspace}}/librtlsdr/build
-        ## cd ${{github.workspace}}/build
-        ls
-        cmake -B build_rtl-sdr -S . -A x64 -DCMAKE_BUILD_TYPE=Release --fresh `
+      - name: RTL-SDR configure build
+        working-directory: ${{runner.workspace}}/librtlsdr
+        run: |
+          mkdir ${{runner.workspace}}/librtlsdr/build
+          ## cd ${{github.workspace}}/build
+          ls
+          cmake -B build_rtl-sdr -S . -A x64 -DCMAKE_BUILD_TYPE=Release --fresh `
               -DLIBUSB_LIBRARIES=${{runner.workspace}}/libusb/build/v143/x64/Release/dll/libusb-1.0.lib `
               -DLIBUSB_PKG_LIBRARY_DIRS=${{runner.workspace}}/libusb/build/v143/x64/Release/dll/libusb-1.0.lib  `
               -DLIBUSB_INCLUDE_DIRS=${{runner.workspace}}/libusb/libusb `
@@ -128,32 +128,32 @@ jobs:
               ## --log-level=DEBUG --trace-expand --debug-find 
 
         
-    - name: cmake librtlsdr
-      run: |
-        ## cd build
-        cmake --build build_rtl-sdr --config Release --verbose
-        echo "*********************************************"
+      - name: cmake librtlsdr
+        run: |
+          ## cd build
+          cmake --build build_rtl-sdr --config Release --verbose
+          echo "*********************************************"
 
-    - name: List rtlsdr 2
-      run: |
-        ls 
-        ls -Recurse -Exclude ".git,libusb,pthread-win32,debian"
+      - name: List rtlsdr 2
+        run: |
+          ls 
+          ls -Recurse -Exclude ".git,libusb,pthread-win32,debian"
 
-    - name: cmake install librtlsdr
-      run: |
-        cmake --install build_rtl-sdr --prefix dist --verbose
-        ###echo "* ${{github.workspace}} : `git show --format='%h (%s, %as)' --no-patch`" >> ${{github.workspace}}/release_notes.md
+      - name: cmake install librtlsdr
+        run: |
+          cmake --install build_rtl-sdr --prefix dist --verbose
+          ###echo "* ${{github.workspace}} : `git show --format='%h (%s, %as)' --no-patch`" >> ${{github.workspace}}/release_notes.md
 
 
     
 
-    - name: ExtIO_RTL configure build
-      working-directory: ${{github.workspace}}
-      run: |
-        mkdir ${{github.workspace}}/build
-        ## cd ${{github.workspace}}/build
-        ls
-        cmake -B build_ExtIO_RTL -S . -A x64 -DCMAKE_BUILD_TYPE=Release --fresh `
+      - name: ExtIO_RTL configure build
+        working-directory: ${{github.workspace}}
+        run: |
+          mkdir ${{github.workspace}}/build
+          ## cd ${{github.workspace}}/build
+          ls
+          cmake -B build_ExtIO_RTL -S . -A x64 -DCMAKE_BUILD_TYPE=Release --fresh `
               -DLIBUSB_LIBRARIES=${{runner.workspace}}/libusb/build/v143/x64/Release/dll/libusb-1.0.lib `
               -DLIBUSB_PKG_LIBRARY_DIRS=${{runner.workspace}}/libusb/build/v143/x64/Release/dll/libusb-1.0.lib  `
               -DLIBUSB_INCLUDE_DIRS=${{runner.workspace}}/libusb/libusb `
@@ -164,35 +164,35 @@ jobs:
               -DCMAKE_THREAD_LIBS_INIT=${{runner.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib 
               ## --log-level=DEBUG --trace-expand --debug-find 
 
-    - name: List ExtIO_RTL 1
-      run: |
-        ls -Recurse -Exclude ".git,libusb,pthread-win32,debian"
-        ## cd ..
-
-    - name: cmake ExtIO_RTL
-      run: |
-        ## cd build
-        cmake --build build_ExtIO_RTL --config Release --verbose
-        echo "*********************************************"
-
-    - name: List ExtIO_RTL 2
-      run: |
-        ls 
-        ls -Recurse -Exclude ".git,libusb,pthread-win32,debian"
-
-    - name: cmake install
-      run: |
-        cmake --install build_ExtIO_RTL --prefix dist --verbose
-        ###echo "* ${{github.workspace}} : `git show --format='%h (%s, %as)' --no-patch`" >> ${{github.workspace}}/release_notes.md
-
-
-      - name: Collect files to distribute
-        working-directory: ${{github.workspace}}
-        shell: bash
+      - name: List ExtIO_RTL 1
         run: |
-          cp "${{github.workspace}}/ExtIO_RTL/README.md" ./
-          cp "${{github.workspace}}/ExtIO_RTL/COPYING" ./LICENSE
-          cp "${{github.workspace}}/build_ExtIO_RTL/Release/ExtIO_RTL.dll" ./
+          ls -Recurse -Exclude ".git,libusb,pthread-win32,debian"
+          ## cd ..
+
+      - name: cmake ExtIO_RTL
+        run: |
+          ## cd build
+          cmake --build build_ExtIO_RTL --config Release --verbose
+          echo "*********************************************"
+
+      - name: List ExtIO_RTL 2
+        run: |
+          ls 
+          ls -Recurse -Exclude ".git,libusb,pthread-win32,debian"
+
+      - name: cmake install
+        run: |
+          cmake --install build_ExtIO_RTL --prefix dist --verbose
+          ###echo "* ${{github.workspace}} : `git show --format='%h (%s, %as)' --no-patch`" >> ${{github.workspace}}/release_notes.md
+
+
+        - name: Collect files to distribute
+          working-directory: ${{github.workspace}}
+          shell: bash
+          run: |
+            cp "${{github.workspace}}/ExtIO_RTL/README.md" ./
+            cp "${{github.workspace}}/ExtIO_RTL/COPYING" ./LICENSE
+            cp "${{github.workspace}}/build_ExtIO_RTL/Release/ExtIO_RTL.dll" ./
 
       - name: package and upload
         uses: actions/upload-artifact@v4
