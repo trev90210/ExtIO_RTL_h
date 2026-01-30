@@ -16,9 +16,9 @@ jobs:
           - 'x64'
           #- 'ARM64'
 
-  defaults:
-    run:
-      shell: PowerShell
+    defaults:
+      run:
+        shell: PowerShell
 
     env:
       ARCH: ${{ matrix.architecture }}
