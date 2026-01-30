@@ -186,10 +186,10 @@ jobs:
           ###echo "* ${{github.workspace}} : `git show --format='%h (%s, %as)' --no-patch`" >> ${{github.workspace}}/release_notes.md
 
 
-        - name: Collect files to distribute
-          working-directory: ${{github.workspace}}
-          shell: bash
-          run: |
+      - name: Collect files to distribute
+        working-directory: ${{github.workspace}}
+        shell: bash
+        run: |
             cp "${{github.workspace}}/ExtIO_RTL/README.md" ./
             cp "${{github.workspace}}/ExtIO_RTL/COPYING" ./LICENSE
             cp "${{github.workspace}}/build_ExtIO_RTL/Release/ExtIO_RTL.dll" ./
@@ -202,4 +202,5 @@ jobs:
             ${{github.workspace}}/ExtIO_RTL.dll
             ${{github.workspace}}/README.md
             ${{github.workspace}}/LICENSE
+
 
