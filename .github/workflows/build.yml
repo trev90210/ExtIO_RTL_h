@@ -7,7 +7,7 @@ defaults:
     shell: PowerShell
 
 jobs:
-  build:
+  build_ExtIO_RTL:
     strategy:
       matrix:
         os:
