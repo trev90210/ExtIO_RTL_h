@@ -188,19 +188,23 @@ jobs:
 
       - name: Collect files to distribute
         working-directory: ${{github.workspace}}
-        shell: bash
         run: |
-            cp "${{github.workspace}}/ExtIO_RTL/README.md" ./
-            cp "${{github.workspace}}/ExtIO_RTL/COPYING" ./LICENSE
-            cp "${{github.workspace}}/build_ExtIO_RTL/Release/ExtIO_RTL.dll" ./
+          cp   ${{ runner.workspace }}/pthread-win32/shared/bin/*  dist/bin
+          cp   ${{ runner.workspace }}/libusb/build/v143/x64/Release/dll/*.dll dist/bin
+          # cp "${{github.workspace}}/ExtIO_RTL/README.md" ./
+          # cp "${{github.workspace}}/ExtIO_RTL/COPYING" ./LICENSE
+
 
       - name: package and upload
         uses: actions/upload-artifact@v4
         with:
-          name: extio_rtl
+          name: librtlsdr_librtlsdr_dist
           path: |
-            ${{github.workspace}}/ExtIO_RTL.dll
-            ${{github.workspace}}/README.md
-            ${{github.workspace}}/LICENSE
-
-
+            dist/lib/rtlsdr.lib
+            dist/bin
+            dist/include
+            COPYING
+            AUTHORS
+            README
+            # ${{ runner.workspace }}/libusb/build/v143/x64/Release/dll/*.dll
+            # ${{ runner.workspace }}/pthread-win32/shared/bin
