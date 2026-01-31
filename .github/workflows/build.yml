@@ -95,7 +95,7 @@ jobs:
           echo "********************************************"
           ls -Recurse -Exclude ".git,debian" -Path  "${{ runner.workspace }}/pthread-win32"
 
-            - uses: ilammy/msvc-dev-cmd@v1
+      - uses: ilammy/msvc-dev-cmd@v1
 
       - name: Configure Meson
         run: meson setup build --vsenv --buildtype=${{ matrix.type }} -Ddevel=true -Db_lto=false -Dpermissive=${{ matrix.permissive }}
@@ -222,3 +222,4 @@ jobs:
             README
             # ${{ runner.workspace }}/libusb/build/v143/x64/Release/dll/*.dll
             # ${{ runner.workspace }}/pthread-win32/shared/bin
+
