@@ -29,6 +29,12 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
+      - name: Install dependencies
+        run: |
+            python3 -m pip install -U pip
+            pip3 install meson ninja
+            choco install wget innoextract --no-progress
+
       - name: Checkout code
         uses: actions/checkout@v4
         with:
@@ -87,7 +93,15 @@ jobs:
           echo "********************************************"
           ls -Path "${{ runner.workspace }}"
           echo "********************************************"
-          ls -Recurse -Exclude ".git,debian" -Path  "${{ runner.workspace }}/pthread-win32" 
+          ls -Recurse -Exclude ".git,debian" -Path  "${{ runner.workspace }}/pthread-win32"
+
+            - uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Configure Meson
+        run: meson setup build --vsenv --buildtype=${{ matrix.type }} -Ddevel=true -Db_lto=false -Dpermissive=${{ matrix.permissive }}
+
+      - name: Build tomlplusplus
+        run: meson compile -C build 
         
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
