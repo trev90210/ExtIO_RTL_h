@@ -100,11 +100,21 @@ jobs:
       - name: Configure Meson
         working-directory: ${{runner.workspace}}/tomlplusplus
         run: |
+            cd ${{runner.workspace}}/tomlplusplus
             mkdir build
             meson setup build --vsenv --buildtype=release -Ddevel=true -Db_lto=false -Dpermissive=false
 
       - name: Build tomlplusplus
         run: meson compile -C build 
+                
+      - name: List tomlplusplus
+        run: |
+          echo "********************************************"
+          ls 
+          echo "********************************************"
+          ls -Path "${{ runner.workspace }}/tomlplusplus"
+          echo "********************************************"
+          ls -Recurse -Exclude ".git,debian" -Path  "${{ runner.workspace }}/tomlplusplus"
         
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
