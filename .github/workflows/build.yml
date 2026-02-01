@@ -172,7 +172,8 @@ jobs:
               -DTHREADS_PTHREADS_INCLUDE_DIR=${{runner.workspace}}/pthread-win32 `
               -DTHREADS_PTHREADS_LIBRARY=${{runner.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib `
               -DTHREADS_PTHREADS_WIN32_LIBRARY=${{runner.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib `
-              -DCMAKE_THREAD_LIBS_INIT=${{runner.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib 
+              -DCMAKE_THREAD_LIBS_INIT=${{runner.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib `
+              -DEXTIO_THREAD_LIB=${{runner.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib
               ## --log-level=DEBUG --trace-expand --debug-find 
 
       - name: List ExtIO_RTL 1
@@ -219,6 +220,7 @@ jobs:
             README
             # ${{ runner.workspace }}/libusb/build/v143/x64/Release/dll/*.dll
             # ${{ runner.workspace }}/pthread-win32/shared/bin
+
 
 
 
