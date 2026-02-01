@@ -105,7 +105,10 @@ jobs:
             meson setup build --vsenv --buildtype=release -Ddevel=true -Db_lto=false -Dpermissive=true
 
       - name: Build tomlplusplus
-        run: meson compile -C build 
+        working-directory: ${{runner.workspace}}/tomlplusplus
+        run: |
+            cd ${{runner.workspace}}/tomlplusplus
+            meson compile -C build 
                 
       - name: List tomlplusplus
         run: |
