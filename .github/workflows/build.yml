@@ -55,9 +55,10 @@ jobs:
           cd ${{github.workspace}}
           git clone https://github.com/marzer/tomlplusplus tomlplusplus
           git clone https://github.com/GerHobbelt/pthread-win32 pthread-win32
+          git clone https://github.com/trev90211/librtlsdr
           cd ${{runner.workspace}}
           git clone https://github.com/libusb/libusb libusb
-          git clone https://github.com/trev90211/librtlsdr
+
 
       - name: ls dependencies
         working-directory: ${{runner.workspace}}
@@ -120,10 +121,10 @@ jobs:
           cd ..
 
       - name: RTL-SDR configure build
-        working-directory: ${{runner.workspace}}/librtlsdr
+        working-directory: ${{github.workspace}}/librtlsdr
         run: |
-          mkdir ${{runner.workspace}}/librtlsdr/build_rtl-sdr
-          cd ${{runner.workspace}}/librtlsdr/
+          mkdir ${{github.workspace}}/librtlsdr/build_rtl-sdr
+          cd ${{github.workspace}}/librtlsdr/
           ls
           cmake -B build_rtl-sdr -S . -A x64 -DCMAKE_BUILD_TYPE=Release --fresh `
               -DLIBUSB_LIBRARIES=${{runner.workspace}}/libusb/build/v143/x64/Release/dll/libusb-1.0.lib `
@@ -140,7 +141,7 @@ jobs:
       - name: cmake build_rtl-sdr
         run: |
           ## cd build
-          cd ${{runner.workspace}}/librtlsdr
+          cd ${{github.workspace}}/librtlsdr
           cmake --build build_rtl-sdr --config Release --verbose
           echo "*********************************************"
 
@@ -151,7 +152,7 @@ jobs:
 
       - name: cmake install librtlsdr
         run: |
-          cd ${{runner.workspace}}/librtlsdr
+          cd ${{github.workspace}}/librtlsdr
           cmake --install build_rtl-sdr --prefix dist --verbose
           ###echo "* ${{github.workspace}} : `git show --format='%h (%s, %as)' --no-patch`" >> ${{github.workspace}}/release_notes.md
 
@@ -220,6 +221,7 @@ jobs:
             README
             # ${{ runner.workspace }}/libusb/build/v143/x64/Release/dll/*.dll
             # ${{ runner.workspace }}/pthread-win32/shared/bin
+
 
 
 
