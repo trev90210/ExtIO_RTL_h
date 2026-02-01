@@ -54,10 +54,10 @@ jobs:
         run: |
           cd ${{github.workspace}}
           git clone https://github.com/marzer/tomlplusplus tomlplusplus
+          git clone https://github.com/GerHobbelt/pthread-win32 pthread-win32
           cd ${{runner.workspace}}
           git clone https://github.com/libusb/libusb libusb
           git clone https://github.com/trev90211/librtlsdr
-          git clone https://github.com/GerHobbelt/pthread-win32 pthread-win32
 
       - name: ls dependencies
         working-directory: ${{runner.workspace}}
@@ -66,7 +66,7 @@ jobs:
           echo "********************************************"
           ls -Path "${{ runner.workspace }}"
           echo "********************************************"
-          ls -Recurse -Exclude ".git,debian" -Path "${{ runner.workspace }}/pthread-win32" 
+          ls -Recurse -Exclude ".git,debian" -Path "${{ github.workspace }}/pthread-win32" 
           echo "********************************************"
           ls -Recurse -Exclude ".git,debian" -Path "${{ runner.workspace }}/libusb"
           echo "********************************************"
@@ -77,7 +77,7 @@ jobs:
 
           
       - name: Build pthread-win32
-        working-directory: ${{ runner.workspace }}
+        working-directory: ${{ github.workspace }}
         run: |
           cd pthread-win32
           cmake -B shared `
@@ -92,9 +92,9 @@ jobs:
           echo "********************************************"
           ls 
           echo "********************************************"
-          ls -Path "${{ runner.workspace }}"
+          ls -Path "${{ github.workspace }}"
           echo "********************************************"
-          ls -Recurse -Exclude ".git,debian" -Path  "${{ runner.workspace }}/pthread-win32"
+          ls -Recurse -Exclude ".git,debian" -Path  "${{ github.workspace }}/pthread-win32"
 
         
       - name: Setup MSBuild
@@ -130,10 +130,10 @@ jobs:
               -DLIBUSB_PKG_LIBRARY_DIRS=${{runner.workspace}}/libusb/build/v143/x64/Release/dll/libusb-1.0.lib  `
               -DLIBUSB_INCLUDE_DIRS=${{runner.workspace}}/libusb/libusb `
               -DLIBUSB_INCLUDE_DIR=${{runner.workspace}}/libusb/libusb `
-              -DTHREADS_PTHREADS_INCLUDE_DIR=${{runner.workspace}}/pthread-win32 `
-              -DTHREADS_PTHREADS_LIBRARY=${{runner.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib `
-              -DTHREADS_PTHREADS_WIN32_LIBRARY=${{runner.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib `
-              -DCMAKE_THREAD_LIBS_INIT=${{runner.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib 
+              -DTHREADS_PTHREADS_INCLUDE_DIR=${{github.workspace}}/pthread-win32 `
+              -DTHREADS_PTHREADS_LIBRARY=${{github.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib `
+              -DTHREADS_PTHREADS_WIN32_LIBRARY=${{github.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib `
+              -DCMAKE_THREAD_LIBS_INIT=${{github.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib 
               ## --log-level=DEBUG --trace-expand --debug-find 
 
         
@@ -169,11 +169,11 @@ jobs:
               -DLIBUSB_PKG_LIBRARY_DIRS=${{runner.workspace}}/libusb/build/v143/x64/Release/dll/libusb-1.0.lib  `
               -DLIBUSB_INCLUDE_DIRS=${{runner.workspace}}/libusb/libusb `
               -DLIBUSB_INCLUDE_DIR=${{runner.workspace}}/libusb/libusb `
-              -DTHREADS_PTHREADS_INCLUDE_DIR=${{runner.workspace}}/pthread-win32 `
-              -DTHREADS_PTHREADS_LIBRARY=${{runner.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib `
-              -DTHREADS_PTHREADS_WIN32_LIBRARY=${{runner.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib `
-              -DCMAKE_THREAD_LIBS_INIT=${{runner.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib `
-              -DEXTIO_THREAD_LIB=${{runner.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib
+              -DTHREADS_PTHREADS_INCLUDE_DIR=${{github.workspace}}/pthread-win32 `
+              -DTHREADS_PTHREADS_LIBRARY=${{github.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib `
+              -DTHREADS_PTHREADS_WIN32_LIBRARY=${{github.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib `
+              -DCMAKE_THREAD_LIBS_INIT=${{github.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib `
+              -DEXTIO_THREAD_LIB=${{github.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib
               ## --log-level=DEBUG --trace-expand --debug-find 
 
       - name: List ExtIO_RTL 1
