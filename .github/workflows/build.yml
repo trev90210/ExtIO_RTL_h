@@ -161,8 +161,8 @@ jobs:
       - name: ExtIO_RTL configure build
         working-directory: ${{github.workspace}}
         run: |
-          mkdir ${{github.workspace}}/build
-          ## cd ${{github.workspace}}/build
+          mkdir ${{github.workspace}}/build_ExtIO_RTL
+          cd ${{github.workspace}}
           ls
           cmake -B build_ExtIO_RTL -S . -A x64 -DCMAKE_BUILD_TYPE=Release --fresh `
               -DLIBUSB_LIBRARIES=${{runner.workspace}}/libusb/build/v143/x64/Release/dll/libusb-1.0.lib `
@@ -219,6 +219,7 @@ jobs:
             README
             # ${{ runner.workspace }}/libusb/build/v143/x64/Release/dll/*.dll
             # ${{ runner.workspace }}/pthread-win32/shared/bin
+
 
 
 
