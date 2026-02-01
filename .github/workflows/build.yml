@@ -122,14 +122,14 @@ jobs:
       - name: RTL-SDR configure build
         working-directory: ${{runner.workspace}}/librtlsdr
         run: |
-          mkdir ${{runner.workspace}}/librtlsdr/build
-          cd ${{runner.workspace}}/librtlsdr/build
+          mkdir ${{runner.workspace}}/librtlsdr/build_rtl-sdr
+          cd ${{runner.workspace}}/librtlsdr/
           ls
           cmake -B build_rtl-sdr -S . -A x64 -DCMAKE_BUILD_TYPE=Release --fresh `
               -DLIBUSB_LIBRARIES=${{runner.workspace}}/libusb/build/v143/x64/Release/dll/libusb-1.0.lib `
               -DLIBUSB_PKG_LIBRARY_DIRS=${{runner.workspace}}/libusb/build/v143/x64/Release/dll/libusb-1.0.lib  `
               -DLIBUSB_INCLUDE_DIRS=${{runner.workspace}}/libusb/libusb `
-              -DLIBUSB_INCLUDE_DIR=${{runner.workspace}}/libusb/libusb `
+              --7R=${{runner.workspace}}/libusb/libusb `
               -DTHREADS_PTHREADS_INCLUDE_DIR=${{runner.workspace}}/pthread-win32 `
               -DTHREADS_PTHREADS_LIBRARY=${{runner.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib `
               -DTHREADS_PTHREADS_WIN32_LIBRARY=${{runner.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib `
@@ -137,10 +137,10 @@ jobs:
               ## --log-level=DEBUG --trace-expand --debug-find 
 
         
-      - name: cmake librtlsdr
+      - name: cmake build_rtl-sdr
         run: |
           ## cd build
-          cd ${{runner.workspace}}/librtlsdr/build
+          cd ${{runner.workspace}}/librtlsdr/build_rtl-sdr
           cmake --build build_rtl-sdr --config Release --verbose
           echo "*********************************************"
 
@@ -151,7 +151,7 @@ jobs:
 
       - name: cmake install librtlsdr
         run: |
-          cd ${{runner.workspace}}/librtlsdr/build
+          cd ${{runner.workspace}}/librtlsdr/build_rtl-sdr
           cmake --install build_rtl-sdr --prefix dist --verbose
           ###echo "* ${{github.workspace}} : `git show --format='%h (%s, %as)' --no-patch`" >> ${{github.workspace}}/release_notes.md
 
@@ -219,6 +219,7 @@ jobs:
             README
             # ${{ runner.workspace }}/libusb/build/v143/x64/Release/dll/*.dll
             # ${{ runner.workspace }}/pthread-win32/shared/bin
+
 
 
 
