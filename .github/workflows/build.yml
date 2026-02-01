@@ -134,8 +134,8 @@ jobs:
               -DTHREADS_PTHREADS_INCLUDE_DIR=${{github.workspace}}/pthread-win32 `
               -DTHREADS_PTHREADS_LIBRARY=${{github.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib `
               -DTHREADS_PTHREADS_WIN32_LIBRARY=${{github.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib `
-              -DCMAKE_THREAD_LIBS_INIT=${{github.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib 
-              ## --log-level=DEBUG --trace-expand --debug-find 
+              -DCMAKE_THREAD_LIBS_INIT=${{github.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib `
+              --log-level=DEBUG --trace-expand --debug-find 
 
         
       - name: cmake build_rtl-sdr
