@@ -99,6 +99,7 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
+
       - name: libusb Configure Visual Studio and CMake 
         working-directory: ${{runner.workspace}}/libusb
         run: |
@@ -121,7 +122,7 @@ jobs:
       - name: tomlplusplus Configure Visual Studio and CMake 
         working-directory: ${{runner.workspace}}/tomlplusplus
         run: |
-          msbuild tomlplusplus.sln `
+          msbuild toml++.sln `
                 /m `
                 -property:Configuration=Release `
                 -property:Platform=x64
