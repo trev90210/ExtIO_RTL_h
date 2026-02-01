@@ -95,29 +95,10 @@ jobs:
           echo "********************************************"
           ls -Recurse -Exclude ".git,debian" -Path  "${{ runner.workspace }}/pthread-win32"
 
-      - uses: ilammy/msvc-dev-cmd@v1
-
-      - name: Configure Meson
-        working-directory: ${{runner.workspace}}/tomlplusplus
-        run: |
-            cd ${{runner.workspace}}/tomlplusplus
-            mkdir build
-            meson setup build --vsenv --buildtype=release -Ddevel=true -Db_lto=false -Dpermissive=false
-
-      - name: Build tomlplusplus
-        run: meson compile -C build 
-                
-      - name: List tomlplusplus
-        run: |
-          echo "********************************************"
-          ls 
-          echo "********************************************"
-          ls -Path "${{ runner.workspace }}/tomlplusplus"
-          echo "********************************************"
-          ls -Recurse -Exclude ".git,debian" -Path  "${{ runner.workspace }}/tomlplusplus"
         
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
+
 
       - name: libusb Configure Visual Studio and CMake 
         working-directory: ${{runner.workspace}}/libusb
@@ -134,6 +115,25 @@ jobs:
         run: |
           echo "********************************************"
           ls -Recurse -Exclude ".git,debian"  -Path "${{ runner.workspace }}/libusb"
+          echo "********************************************"
+          cd ..
+
+
+      - name: tomlplusplus Configure Visual Studio and CMake 
+        working-directory: ${{runner.workspace}}/tomlplusplus
+        run: |
+          msbuild toml++.sln `
+                /m `
+                -property:Configuration=Release `
+                -property:Platform=x64
+          ## cmake --build . `
+          ##      --config Release `
+          ##      --target install
+
+      - name: List tomlplusplus
+        run: |
+          echo "********************************************"
+          ls -Recurse -Exclude ".git,debian"  -Path "${{ runner.workspace }}/tomlplusplus"
           echo "********************************************"
           cd ..
 
