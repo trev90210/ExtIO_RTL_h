@@ -140,7 +140,7 @@ jobs:
       - name: cmake build_rtl-sdr
         run: |
           ## cd build
-          cd ${{runner.workspace}}/librtlsdr/build_rtl-sdr
+          cd ${{runner.workspace}}/librtlsdr
           cmake --build build_rtl-sdr --config Release --verbose
           echo "*********************************************"
 
@@ -151,7 +151,7 @@ jobs:
 
       - name: cmake install librtlsdr
         run: |
-          cd ${{runner.workspace}}/librtlsdr/build_rtl-sdr
+          cd ${{runner.workspace}}/librtlsdr
           cmake --install build_rtl-sdr --prefix dist --verbose
           ###echo "* ${{github.workspace}} : `git show --format='%h (%s, %as)' --no-patch`" >> ${{github.workspace}}/release_notes.md
 
