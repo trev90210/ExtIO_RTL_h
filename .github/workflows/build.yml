@@ -52,8 +52,9 @@ jobs:
       - name: Clone dependencies
         working-directory: ${{runner.workspace}}
         run: |
-          cd ${{runner.workspace}}
+          cd ${{github.workspace}}
           git clone https://github.com/marzer/tomlplusplus tomlplusplus
+          cd ${{runner.workspace}}
           git clone https://github.com/libusb/libusb libusb
           git clone https://github.com/trev90211/librtlsdr
           git clone https://github.com/GerHobbelt/pthread-win32 pthread-win32
@@ -95,32 +96,10 @@ jobs:
           echo "********************************************"
           ls -Recurse -Exclude ".git,debian" -Path  "${{ runner.workspace }}/pthread-win32"
 
-      - uses: ilammy/msvc-dev-cmd@v1
-
-      - name: Configure Meson
-        working-directory: ${{runner.workspace}}/tomlplusplus
-        run: |
-            cd ${{runner.workspace}}/tomlplusplus
-            mkdir build
-            meson setup build --vsenv --buildtype=release -Ddevel=true -Db_lto=false -Dpermissive=true
-
-      - name: Build tomlplusplus
-        working-directory: ${{runner.workspace}}/tomlplusplus
-        run: |
-            cd ${{runner.workspace}}/tomlplusplus
-            meson compile -C build 
-                
-      - name: List tomlplusplus
-        run: |
-          echo "********************************************"
-          ls 
-          echo "********************************************"
-          ls -Path "${{ runner.workspace }}/tomlplusplus"
-          echo "********************************************"
-          ls -Recurse -Exclude ".git,debian" -Path  "${{ runner.workspace }}/tomlplusplus"
         
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
+
 
       - name: libusb Configure Visual Studio and CMake 
         working-directory: ${{runner.workspace}}/libusb
@@ -161,6 +140,7 @@ jobs:
       - name: cmake librtlsdr
         run: |
           ## cd build
+          cd ${{runner.workspace}}/librtlsdr/build
           cmake --build build_rtl-sdr --config Release --verbose
           echo "*********************************************"
 
@@ -171,6 +151,7 @@ jobs:
 
       - name: cmake install librtlsdr
         run: |
+          cd ${{runner.workspace}}/librtlsdr/build
           cmake --install build_rtl-sdr --prefix dist --verbose
           ###echo "* ${{github.workspace}} : `git show --format='%h (%s, %as)' --no-patch`" >> ${{github.workspace}}/release_notes.md
 
