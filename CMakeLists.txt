@@ -16,6 +16,10 @@ if (NOT MSVC)
     message(ERROR "CMakeLists.txt does only support the MSVC compiler")
 endif()
 
+########################################################################
+# Find build dependencies
+########################################################################
+find_package(Threads)
 
 # allow overriding cmake options with standard variables - from a project including this one
 cmake_policy(SET CMP0077 NEW)  # set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
