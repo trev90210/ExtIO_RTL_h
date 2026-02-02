@@ -135,7 +135,7 @@ jobs:
               -DTHREADS_PTHREADS_LIBRARY=${{github.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib `
               -DTHREADS_PTHREADS_WIN32_LIBRARY=${{github.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib `
               -DCMAKE_THREAD_LIBS_INIT=${{github.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib `
-              --log-level=DEBUG --trace-expand --debug-find 
+              ## --log-level=DEBUG --trace-expand --debug-find 
 
         
       - name: cmake build_rtl-sdr
@@ -175,7 +175,7 @@ jobs:
               -DTHREADS_PTHREADS_WIN32_LIBRARY=${{github.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib `
               -DCMAKE_THREAD_LIBS_INIT=${{github.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib `
               -DEXTIO_THREAD_LIB=${{github.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib
-              ## --log-level=DEBUG --trace-expand --debug-find 
+              --log-level=DEBUG --trace-expand --debug-find 
 
       - name: List ExtIO_RTL 1
         run: |
@@ -211,7 +211,7 @@ jobs:
       - name: package and upload
         uses: actions/upload-artifact@v4
         with:
-          name: librtlsdr_librtlsdr_dist
+          name: ExtIO_RTL_${{ matrix.architecture }}_dist
           path: |
             dist/lib/rtlsdr.lib
             dist/bin
