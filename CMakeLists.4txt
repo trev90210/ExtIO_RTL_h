@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2.0)
+cmake_minimum_required(VERSION 3.5...4.1)
 # required to enable MSVC_RUNTIME_LIBRARY
 cmake_policy(SET CMP0091 NEW)
 # set(CMAKE_POLICY_DEFAULT_CMP0091 NEW)
@@ -16,6 +16,10 @@ if (NOT MSVC)
     message(ERROR "CMakeLists.txt does only support the MSVC compiler")
 endif()
 
+########################################################################
+# Find build dependencies
+########################################################################
+find_package(Threads)
 
 # allow overriding cmake options with standard variables - from a project including this one
 cmake_policy(SET CMP0077 NEW)  # set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
@@ -24,13 +28,21 @@ set(RTL_STATIC_BUILD TRUE)
 set(LINK_RTLTOOLS_AGAINST_STATIC_LIB TRUE)
 
 if (WIN32)
+    set( libpthreadVC3 "TRUE" )
     set( EXTIO_THREAD_LIB libpthreadVC3 )
+    set( EXTIO_THREAD_LIB "${CMAKE_CURRENT_SOURCE_DIR}/pthread-win32/static/Release/" )
+    #set( pthread-win32 "${CMAKE_CURRENT_SOURCE_DIR}/pthread-win32/static/Release/" )
     set(PTHREADS4W_VERSION 3)
-    add_subdirectory(pthread-win32)
+    message(STATUS pthreadVC3 ${pthreadVC3})
+    message(STATUS libpthreadVC3 ${libpthreadVC3})
+    message(STATUS pthread-win32 ${pthread-win32})
+    #add_subdirectory(pthread-win32)
+    #add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/pthread-win32/static/Release/")
     if (TARGET libpthreadVC3)
+        message(STATUS "TARGET libpthreadVC3")
         set( THREADS_FOUND  TRUE)
         set( Threads_FOUND  TRUE)
-        set( THREADS_PTHREADS_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/pthread-win32" )
+        set( THREADS_PTHREADS_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/pthread-win32/static/Release/" )
         set( THREADS_PTHREADS_WIN32_LIBRARY libpthreadVC3)
         set( CMAKE_THREAD_LIBS_INIT  libpthreadVC3)
     else()
@@ -40,10 +52,12 @@ if (WIN32)
     set( EXTIO_USB_LIB libusb_static )
     add_subdirectory(libusb)
     if (TARGET libusb_static)
+        message(STATUS "TARGET libusb_static")
         set( LIBUSB_FOUND TRUE )
         set( LIBUSB_LIBRARIES  libusb_static )
     endif()
 else()
+    message(STATUS "NOT WIN32")
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads REQUIRED)
     set( EXTIO_THREAD_LIB Threads::Threads )
@@ -133,4 +147,5 @@ endforeach()
 add_custom_target(rtl_tools
   DEPENDS ${RTLTOOLS}
 )
+
 
