@@ -108,7 +108,6 @@ target_link_libraries(ExtIO_RTL PRIVATE
     ${EXTIO_USB_LIB}
 )
 
-
 set(RTLTOOLS "rtl_sdr;rtl_tcp;rtl_udp;rtl_test;rtl_eeprom;rtl_biast")
 set(RTLTOOLS "${RTLTOOLS};rtl_fm")
 # set(RTLTOOLS "${RTLTOOLS};rtl_multichannel")
