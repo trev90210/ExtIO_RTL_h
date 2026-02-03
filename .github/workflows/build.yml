@@ -44,10 +44,10 @@ jobs:
 
       - name: check
         run: |
-          rmdir /S /Q tomlplusplus
-          rmdir /S /Q libusb
-          rmdir /S /Q librtlsdr
-          rmdir /S /Q pthread-win32
+          Remove-Item -Path tomlplusplus -Recurse
+          Remove-Item -Path libusb -Recurse
+          Remove-Item -Path librtlsdr -Recurse
+          Remove-Item -Path pthread-win32 -Recurse
           ls
 
       - name: Clone dependencies
