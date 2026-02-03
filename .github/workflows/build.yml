@@ -90,12 +90,12 @@ jobs:
             cat $env:temp\vcvars.txt
             Get-Content "$env:temp\vcvars.txt" | Foreach-Object { if ($_ -match "^(.*?)=(.*)$") { Set-Content "env:\$($matches[1])" $matches[2] } }
             # run cmake, looks v141_xp Toolset requires VS 2019
-            cmake -G "Visual Studio 17 2022" -A Win32 -S ExtIO_RTL -B build_ExtIO_RTL
+            cmake -G "Visual Studio 17 2022" -A ${{ matrix.architecture }} -S ExtIO_RTL -B build_ExtIO_RTL
 
       - name: Build
         working-directory: ${{runner.workspace}}
         run: |
-            cmake --build build_ExtIO_RTL --config $BUILD_TYPE --target ExtIO_RTL
+            cmake --build build_ExtIO_RTL --config Release --target ExtIO_RTL
 
 
       - name: Collect files to distribute
