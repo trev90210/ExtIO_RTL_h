@@ -56,7 +56,6 @@ jobs:
           git clone https://github.com/marzer/tomlplusplus tomlplusplus
           git clone https://github.com/GerHobbelt/pthread-win32 pthread-win32
           git clone https://github.com/trev90211/librtlsdr
-          cd ${{runner.workspace}}
           git clone https://github.com/libusb/libusb libusb
 
 
@@ -76,127 +75,25 @@ jobs:
           ls -Recurse -Exclude ".git,debian" -Path "${{ github.workspace }}"
           echo "********************************************"
 
-          
-      - name: Build pthread-win32
-        working-directory: ${{ github.workspace }}
-        run: |
-          cd pthread-win32
-          cmake -B shared `
-                -DBUILD_SHARED_LIBS=ON `
-                -DCMAKE_INSTALL_PREFIX=shared
-          cmake --build shared `
-                --config Release `
-                --target install
-                
-      - name: List pthread
-        run: |
-          echo "********************************************"
-          ls 
-          echo "********************************************"
-          ls -Path "${{ github.workspace }}"
-          echo "********************************************"
-          ls -Recurse -Exclude ".git,debian" -Path  "${{ github.workspace }}/pthread-win32"
+
 
         
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
-
-      - name: libusb Configure Visual Studio and CMake 
-        working-directory: ${{runner.workspace}}/libusb
+      - name: Configure Visual Studio and CMake
+        working-directory: ${{runner.workspace}}
         run: |
-          msbuild msvc/libusb.sln `
-                /m `
-                -property:Configuration=Release `
-                -property:Platform=x64
-          ## cmake --build . `
-          ##      --config Release `
-          ##      --target install
+            # setup the compiler
+            cmd.exe /c "call `"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat`" && set > %temp%\vcvars.txt"
+            Get-Content "$env:temp\vcvars.txt" | Foreach-Object { if ($_ -match "^(.*?)=(.*)$") { Set-Content "env:\$($matches[1])" $matches[2] } }
+            # run cmake, looks v141_xp Toolset requires VS 2019
+            cmake -G "Visual Studio 17 2022" -A Win32 -S ExtIO_RTL -B build_ExtIO_RTL
 
-      - name: List libusb
-        run: |
-          echo "********************************************"
-          ls -Recurse -Exclude ".git,debian"  -Path "${{ runner.workspace }}/libusb"
-          echo "********************************************"
-          cd ..
-
-      - name: RTL-SDR configure build
-        working-directory: ${{github.workspace}}/librtlsdr
-        run: |
-          mkdir ${{github.workspace}}/librtlsdr/build_rtl-sdr
-          cd ${{github.workspace}}/librtlsdr/
-          ls
-          cmake -B build_rtl-sdr -S . -A x64 -DCMAKE_BUILD_TYPE=Release --fresh `
-              -DLIBUSB_LIBRARIES=${{runner.workspace}}/libusb/build/v143/x64/Release/dll/libusb-1.0.lib `
-              -DLIBUSB_PKG_LIBRARY_DIRS=${{runner.workspace}}/libusb/build/v143/x64/Release/dll/libusb-1.0.lib  `
-              -DLIBUSB_INCLUDE_DIRS=${{runner.workspace}}/libusb/libusb `
-              -DLIBUSB_INCLUDE_DIR=${{runner.workspace}}/libusb/libusb `
-              -DTHREADS_PTHREADS_INCLUDE_DIR=${{github.workspace}}/pthread-win32 `
-              -DTHREADS_PTHREADS_LIBRARY=${{github.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib `
-              -DTHREADS_PTHREADS_WIN32_LIBRARY=${{github.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib `
-              -DCMAKE_THREAD_LIBS_INIT=${{github.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib 
-              ## --log-level=DEBUG --trace-expand --debug-find 
-
-        
-      - name: cmake build_rtl-sdr
-        run: |
-          ## cd build
-          cd ${{github.workspace}}/librtlsdr
-          cmake --build build_rtl-sdr --config Release --verbose
-          echo "*********************************************"
-
-      - name: List rtlsdr 2
-        run: |
-          ls 
-          ls -Recurse -Exclude ".git,libusb,pthread-win32,debian"
-
-      - name: cmake install librtlsdr
-        run: |
-          cd ${{github.workspace}}/librtlsdr
-          cmake --install build_rtl-sdr --prefix dist --verbose
-          ###echo "* ${{github.workspace}} : `git show --format='%h (%s, %as)' --no-patch`" >> ${{github.workspace}}/release_notes.md
-
-
-    
-
-      - name: ExtIO_RTL configure build
-        working-directory: ${{github.workspace}}
-        run: |
-          mkdir ${{github.workspace}}/build_ExtIO_RTL
-          cd ${{github.workspace}}
-          ls
-          cmake -B build_ExtIO_RTL -S . -A x64 -DCMAKE_BUILD_TYPE=Release --fresh `
-              -DLIBUSB_LIBRARIES=${{runner.workspace}}/libusb/build/v143/x64/Release/dll/libusb-1.0.lib `
-              -DLIBUSB_PKG_LIBRARY_DIRS=${{runner.workspace}}/libusb/build/v143/x64/Release/dll/libusb-1.0.lib  `
-              -DLIBUSB_INCLUDE_DIRS=${{runner.workspace}}/libusb/libusb `
-              -DLIBUSB_INCLUDE_DIR=${{runner.workspace}}/libusb/libusb `
-              -DTHREADS_PTHREADS_INCLUDE_DIR=${{github.workspace}}/pthread-win32 `
-              -DTHREADS_PTHREADS_LIBRARY=${{github.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib `
-              -DTHREADS_PTHREADS_WIN32_LIBRARY=${{github.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib `
-              -DCMAKE_THREAD_LIBS_INIT=${{github.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib `
-              -DEXTIO_THREAD_LIB=${{github.workspace}}/pthread-win32/shared/lib/pthreadVC3.lib `
-              --log-level=DEBUG --trace-expand --debug-find 
-
-      - name: List ExtIO_RTL 1
-        run: |
-          ls -Recurse -Exclude ".git,libusb,pthread-win32,debian"
-          ## cd ..
-
-      - name: cmake ExtIO_RTL
-        run: |
-          ## cd build
-          cmake --build build_ExtIO_RTL --config Release --verbose
-          echo "*********************************************"
-
-      - name: List ExtIO_RTL 2
-        run: |
-          ls 
-          ls -Recurse -Exclude ".git,libusb,pthread-win32,debian"
-
-      - name: cmake install
-        run: |
-          cmake --install build_ExtIO_RTL --prefix dist --verbose
-          ###echo "* ${{github.workspace}} : `git show --format='%h (%s, %as)' --no-patch`" >> ${{github.workspace}}/release_notes.md
+      - name: Build
+        working-directory: ${{runner.workspace}}
+        shell: bash
+        run: cmake --build build_ExtIO_RTL --config $BUILD_TYPE --target ExtIO_RTL
 
 
       - name: Collect files to distribute
