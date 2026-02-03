@@ -44,11 +44,11 @@ jobs:
 
       - name: check
         run: |
-          cmd.exe /c rmdir /S /Q tomlplusplus
-          cmd.exe /c rmdir /S /Q libusb
-          cmd.exe /c rmdir /S /Q librtlsdr
-          cmd.exe /c rmdir /S /Q pthread-win32
-          cmd.exe /c dir
+          rmdir /S /Q tomlplusplus
+          rmdir /S /Q libusb
+          rmdir /S /Q librtlsdr
+          rmdir /S /Q pthread-win32
+          ls
 
       - name: Clone dependencies
         working-directory: ${{runner.workspace}}
