@@ -91,16 +91,19 @@ jobs:
             # setup the compiler
             & "$env:programfiles\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"  
             gci env:* > "$env:temp\vcvars.txt"
-            echo "env before ********************************************"
-            gci env:*
-            echo "vcvars before ********************************************"
-            cat "$env:temp\vcvars.txt"
-            Get-Content "$env:temp\vcvars.txt" | Foreach-Object { echo $_ ; if ($_ -match "^(.*?)=(.*)$") {echo "env:\$($matches[1])" ; Set-Content "env:\$($matches[1])" $matches[2] } }
+            #echo "env before ********************************************"
+            #gci env:*
+            #echo "vcvars before ********************************************"
+            #cat "$env:temp\vcvars.txt"
+            echo "********************************************"
+            Get-Content "$env:temp\vcvars.txt" | Foreach-Object { echo $_ }
+            echo "********************************************"
+            Get-Content "$env:temp\vcvars.txt" | Foreach-Object { if ($_ -match "^(.*?)=(.*)$") { Set-Content "env:\$($matches[1])" $matches[2] } }
             # run cmake, looks v141_xp Toolset requires VS 2019
-            echo "env after ********************************************"
-            gci env:*
-            echo "vcvars after ********************************************"
-            cat "$env:temp\vcvars.txt"
+            #echo "env after ********************************************"
+            #gci env:*
+            #echo "vcvars after ********************************************"
+            #cat "$env:temp\vcvars.txt"
             echo "********************************************"
             cmake -G "Visual Studio 17 2022" -A ${{ matrix.architecture }} -S ExtIO_RTL -B build_ExtIO_RTL
 
