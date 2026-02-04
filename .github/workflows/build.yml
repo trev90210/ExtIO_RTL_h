@@ -95,7 +95,7 @@ jobs:
             gci env:*
             echo "vcvars before ********************************************"
             cat "$env:temp\vcvars.txt"
-            Get-Content "$env:temp\vcvars.txt" | Foreach-Object { echo $_; if ($_ -match "^(.*?)=(.*)$") {echo "env:\$($matches[1]"; Set-Content "env:\$($matches[1])" $matches[2] } }
+            Get-Content "$env:temp\vcvars.txt" | Foreach-Object { echo $_ ; if ($_ -match "^(.*?)=(.*)$") {echo "env:\$($matches[1])" ; Set-Content "env:\$($matches[1])" $matches[2] } }
             # run cmake, looks v141_xp Toolset requires VS 2019
             echo "env after ********************************************"
             gci env:*
