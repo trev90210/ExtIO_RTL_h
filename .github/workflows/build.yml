@@ -100,6 +100,8 @@ jobs:
             echo "********************************************"
             Get-Content "$env:temp\vcvars.txt" | Foreach-Object { if ($_ -match "^(.*?)=(.*)$") { echo "$($matches[1])"  } }
             echo "********************************************"
+            Get-Content "$env:temp\vcvars.txt" | Foreach-Object { if ($_ -match "^(.*?)=(.*)$") { echo "env:\$($matches[1])"  } }
+            echo "********************************************"
             Get-Content "$env:temp\vcvars.txt" | Foreach-Object { if ($_ -match "^(.*?)=(.*)$") { Set-Content "env:\$($matches[1])" $matches[2] } }
             # run cmake, looks v141_xp Toolset requires VS 2019
             #echo "env after ********************************************"
