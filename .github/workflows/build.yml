@@ -104,7 +104,7 @@ jobs:
             echo "********************************************"
             #Get-Content "$env:temp\vcvars.txt" | Foreach-Object { if ($_ -match "^(.*?)=(.*)$") { echo $_  } }
             #echo "********************************************"
-            Get-Content "$env:temp\vcvars.txt" | Foreach-Object { if ($_ -match "^(.*?)\b*(.*)$") { Set-Content "env:$($matches[1])" $matches[2] } }
+            Get-Content '$env:temp\vcvars.txt' | Foreach-Object { if ($_ -match '^(.*?)\b*(.*)$') { Set-Content "env:$($matches[1])" $matches[2] } }
             # run cmake, looks v141_xp Toolset requires VS 2019
             #echo "env after ********************************************"
             #gci env:*
@@ -141,6 +141,7 @@ jobs:
             README
             # ${{ runner.workspace }}/libusb/build/v143/x64/Release/dll/*.dll
             # ${{ runner.workspace }}/pthread-win32/shared/bin
+
 
 
 
