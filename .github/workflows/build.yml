@@ -90,7 +90,7 @@ jobs:
         run: |
             # setup the compiler
             & "$env:programfiles\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"  
-            #gci env:* > "$env:temp\vcvars.txt"
+            Get-Item env: > "$env:temp\vcvars.txt"
             #echo "env before ********************************************"
             #gci env:*
             #echo "vcvars before ********************************************"
@@ -104,7 +104,7 @@ jobs:
             echo "********************************************"
             #Get-Content "$env:temp\vcvars.txt" | Foreach-Object { if ($_ -match "^(.*?)=(.*)$") { echo $_  } }
             #echo "********************************************"
-            #Get-Content "$env:temp\vcvars.txt" | Foreach-Object { if ($_ -match "^(.*?)=(.*)$") { Set-Content "env:$$($matches[1])" $matches[2] } }
+            Get-Content "$env:temp\vcvars.txt" | Foreach-Object { if ($_ -match "^(.*?)=(.*)$") { Set-Content "env:$($matches[1])" $matches[2] } }
             # run cmake, looks v141_xp Toolset requires VS 2019
             #echo "env after ********************************************"
             #gci env:*
@@ -141,6 +141,7 @@ jobs:
             README
             # ${{ runner.workspace }}/libusb/build/v143/x64/Release/dll/*.dll
             # ${{ runner.workspace }}/pthread-win32/shared/bin
+
 
 
 
