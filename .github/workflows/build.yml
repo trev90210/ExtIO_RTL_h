@@ -89,6 +89,7 @@ jobs:
         working-directory: ${{runner.workspace}}
         run: |
             # setup the compiler
+            ls -Path "env:programfiles\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build"
             & "$env:programfiles\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"  
             Get-Item env: > "$env:temp\vcvars.txt"
             echo "env before ********************************************"
