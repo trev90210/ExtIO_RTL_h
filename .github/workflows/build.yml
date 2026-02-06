@@ -32,7 +32,7 @@ jobs:
     steps:
       - name: Install dependencies
         run: |
-            cat "$$env.programfiles\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars${{ env.ARCH_NUM }}.bat"
+            cat "`$$env.programfiles\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars${{ env.ARCH_NUM }}.bat"
             python3 -m pip install -U pip
             pip3 install meson ninja
             choco install wget innoextract --no-progress
